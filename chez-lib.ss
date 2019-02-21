@@ -1,4 +1,4 @@
-; chez-lib.ss v1.06c pub
+; chez-lib.ss v1.06e pub
 #|
   if(#f) cond lambda map foldl reduce curry recursion repl foldr Y 
   str any->str 
@@ -902,8 +902,8 @@
 (def_ (fac-tail n x) (if (> n 1) ;tail is with an ex-storage
    (_ (1- n) (* n x))        ;commutative law of multiplication
    x
-)  ) ;~=7ms
-(def (fac n) (fac-tail n 1)) ;(< n 1021L)
+)  )
+(def (fac n) (fac-tail n 1))
 
 (defn my-round xs
   (let* ( (flt.   (nth xs 0))
@@ -1031,7 +1031,7 @@
 (defn-snest chur-f (a b) b)
 (defn-snest chur-and (a b) ((a b) chur-f))
 (defn-snest chur-or (a b) ((a chur-t) b))
-(defn-snest chur-not (a) ((a chur-f) churT))
+(defn-snest chur-not (a) ((a chur-f) chur-t))
 (defn-snest chur-xor (a b) ((a (chur-not b)) b))
 
 ; pair = \a.\b.\c.c a b
