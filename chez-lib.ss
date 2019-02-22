@@ -1,4 +1,4 @@
-; chez-lib.ss v1.06e pub
+; chez-lib.ss v1.06f pub
 #|
   if(#f) cond lambda map foldl reduce curry recursion repl foldr Y 
   str any->str 
@@ -62,12 +62,12 @@
   (~ (lam (x) x) gs)
 )
 
-(def (curry g . args) ;curry(0~)2
+(def (curry g . args)
   (lam xs
     (redu g
       (append args xs)
 ) ) )
-(def (rcurry g . args) ;curry(0~)2
+(def (rcurry g . args)
   (lam xs
     (redu g
       (append xs args)
@@ -79,9 +79,9 @@
   (if (atomp xs) *v ;
     (car.ori xs) ;
 ) )
-(def (mycdr li)
-  (if (atomp li) *v
-    (cdr.ori li)
+(def (mycdr xs)
+  (if (atomp xs) *v
+    (cdr.ori xs)
 ) )
 (def car mycar)
 (def cdr mycdr)
@@ -190,7 +190,7 @@
           `(lam() body ...)
           [map (lam(x)`(lam(,x))) 'args] ;
 ) ) ) ) )
-(defsyn defn-snest ;(lam(a)(lam(b) body...))
+(defsyn defn-snest ;s for short ;(lam(a)(lam(b) body...))
   ( (_ f args body ...)
     (define f
       (eval
@@ -394,7 +394,7 @@
       ts
 ) ] )
 (def-syn pop
-  (syntax-rules ()
+  (syn-ruls ()
     ((_ ls)
       (let ([ret (car ls)])
         (if (symbol? `ls)
@@ -749,6 +749,8 @@
     (expt (car xs) 2) ;
 ) )
 
+;todo: calc th min length of a line of multiple points
+;todo: calc th length of th line of multiple points
 (defa-def (distance (p1) (p2 ())) ;(dis '(1 2 3 4) '(2 3 4 5)) ;frm p1 to p2: p2-p1
   (let* ( [l1 (len p1)]
           [p2 (if(nilp p2) (nlist '(0) l1) p2)]
@@ -1196,7 +1198,7 @@
   (_ nil xs)
 )
 
-
+; ;yin's code
 ; (define cps
   ; (lambda (exp)
     ; (letrec
@@ -1241,11 +1243,13 @@
       ; (cps1 exp id))))
 
       
-(def (clean)
+(def (restore)  
   (setq
     car car.ori
     cdr cdr.ori
+    ;+   +.ori ;?
 ) )
+(def (clean) (restore))
 (def (reload-it)
   (clean)
   ;(load (symbol->string 'g:/tool/chez-lib.ss))
