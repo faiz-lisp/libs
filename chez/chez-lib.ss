@@ -1,9 +1,8 @@
-; Chez-lib.ss v1.4a pub - Written by Faiz
+; Chez-lib.ss v1.4b - Written by Faiz
 
 #|
   logging: -- about: 22.85 chars/line    
-    v1.48 a7464e0: def/defa supports disordered-default-paras
-    c395600
+    v1.4a: def/defa supports disordered-default-paras    
     
   suffixes:
     @ bad / slow
@@ -48,12 +47,9 @@
       . time activities info net:salt io? file:psw/md5
     (nthof-g-resl rand '(3 1 4) [max-n 10000000])
     (nthof-g rand nth [len 1])
-    (list-head '() 1)
     d-rev
     grep grep-rn 
-    (explode-str str sepa)
-    (disting-code)
-    clean reload? load compile udp/tcp get/post v3 juce ui test trace
+    reload? load compile udp/tcp get/post v3 juce ui test trace
     if(!#f/nil): cadr caddr cadddr eval, repl
     cond case, for map lambda foldl reduce curry recursion repl foldr
     (range% sum f p n)
@@ -207,7 +203,6 @@
 (alias nump   number?)
 (alias exa->inexa exact->inexact)
 (alias inexa->exa inexact->exact)
-(ali floor->fix flonum->fixnum)
 (alias sym->str symbol->string)
 (alias ev     eval)
 (alias reduce apply) ;
@@ -234,6 +229,7 @@
 
 (ali redu~ redu~/fold)
 (ali strhead! string-truncate!)
+
 
 ;
 
@@ -531,7 +527,7 @@
     (cons '(x) [sy/list-the-front xs]) ;
 ) )
 
-(def (defa->vals/aux paras vals nths-defa-part nths-not-defa nths-defa-rest) ;?
+(def (defa->vals/aux paras vals nths-defa-part nths-not-defa nths-defa-rest) ;
   (def (_ paras vals n-head n-ndefa n-tail ret)
     (if (nilp paras) ret ;
       (if (nilp vals)
@@ -546,19 +542,8 @@
   [rev (_ paras vals nths-defa-part nths-not-defa nths-defa-rest nil)]
 )
 
-(defsyn defa-def0 ;@ (_ (g [a] [b (ev 2)] [c 3]) (+ a b c))
-  ( [_ (g . paras) body ...] (defa-def0 g paras body ...)) 
-  ( [_ g paras body ...]
-    (define (g . args) ;
-      (define f% [ev `(lam ,(map car 'paras) body ...)]) ;
-      (let ((min-len [min (len args)(len 'paras)]))
-        (redu f% ;
-          (append~ args
-            (map [lam(x)(ev(cadr x))] (list-tail 'paras min-len)) ;
-) ) ) ) ) )
-
-(defsyn defa-def2 ;(_ (g [a] [b 2] [c ]) (+ a b c))
-  ( [_ (g . paras) body ...] (defa-def2 g paras body ...)) 
+(defsyn defa-def ;(_ (g [a] [b 2] [c ]) (+ a b c))
+  ( [_ (g . paras) body ...] (defa-def g paras body ...)) 
   ( [_ g paras% body ...]
     (define (g . args) ;
       (let ([paras (list-elements 'paras%)]) ;
@@ -575,7 +560,7 @@
 ) ) ) ) ) ) )
 ;We may def func again with some defa paras, and test the func with just one variable para.
 ;(def/defa asd ([a 2] b [c *]) (c a b)) ;(asd 3) ;(asd 4 3) ;(asd 4 3 +)
-(ali defa-def defa-def2)
+;(ali defa-def defa-def2)
 
 (defsyn def/defa ;(_ (g [a] b (c 3) (d 4) e) (+ a b c d)) ;lam/defa ;todo: test@, (d 4) e
   ( [_ (g . paras) body ...] (def/defa g paras body ...))
@@ -712,6 +697,8 @@
   ) ) )
   (_ id gs)
 )
+
+(define floor->fix (compose flonum->fixnum inexact))
 
 ; todo: (_ + 2 * 3) (_ f a g b ...)
 ; (def (compose-fx . fxs) ;see to compose and xn-mk-list
@@ -1569,11 +1556,14 @@
     (li a b)
 ) )
 
+;
+
+(def car-atomp (compose atomp car))
 
 (defn flat (xs)
   (def (rec x ret)
     (cond
-      [(nilp  x) ret] ;
+      [(nilp  x) ret]
       [(atomp x) (cons x ret)] ;
       [else
         (rec (car x)
@@ -1581,6 +1571,16 @@
   ) )
   (rec xs nil)
 )
+
+(def d-len (xs)
+  (def (_ x n)
+    (if~ (nilp x) n
+      (atomp x) (1+ n) ;
+      (_ (car x)
+        [_ (cdr x) n]
+  ) ) )
+  (_ xs 0)
+) ;(d-len '[((a b)c)(d e)]) ;-> 5
 
 (defn flat-and-remov (x xs)
   (let ([g (eq/eql x)])
@@ -1595,6 +1595,21 @@
     ) )
     (_ xs nil)
 ) )
+
+(def (bump xs fmt) ;bumpl ;(d-len fmt)
+  (def (_ x fmt ret)
+    (if~
+      (nilp fmt) ret
+      (atomp fmt) (cons x ret)
+      (letn ([fa(car fmt)] [ln(d-len fa)] [fd(cdr fmt)] [head(list-head x ln)] [tail(list-tail x ln)]) ;
+        (if (car-atomp fmt) ;car-atomp
+          [_ (car x) fa [_ tail fd ret]] ;car
+          (cons [_ head fa ret] [_ tail fd ret]) ;cons _ _
+  ) ) ) )
+  (_ xs fmt nil)
+)
+
+;
   
 (def (redu-map r m xs) (redu r (map m xs))) ;syn for such-as or
 
@@ -2185,7 +2200,7 @@
     (inexact (/ [round% (* fl fac)] fac)) ;
 ) )
 
-
+;txt->excel->chart
 (defn math:points->parabola (x1 y1 x2 y2 x3 y3) ;y=ax^2+bx+c
   (letn (
       [b
@@ -2201,9 +2216,25 @@
     )
     (li a b c)
 ) )
+;(setq abc (math:points->parabola 1 127  153 10  253 1)) ;-> '[a b c]
 (defn y=ax2+bx+c (a b c x)
   (+ [* a (pow x)] [* b x] c)
 )
+
+;(for (x 128) (echol [floor->fix(redu y=ax2+bx+c [conz abc x])]))
+;(for (x 128) (print-to-file "1.txt" [floor->fix(redu y=ax2+bx+c [conz abc x])]))
+#|
+(setq abc (math:points->parabola 1 127  127 11  253 1)) ;其实可以检查abc给用户提示
+(clean-file "1.txt")
+(setq resl (map [lam[x](str(floor->fix(redu y=ax2+bx+c [conz abc x])))] (range 256)))
+(setq ss (redu (curry str/sep " ") resl))
+[print-to-file "1.txt" ss]
+[sys "npp 1.txt"]
+|#
+;(map [lam[x](floor->fix(redu y=ax2+bx+c [conz abc x]))] (range 12))
+;(sys (str "cd.>" "1.txt")) ;cre-new-file 1.txt
+;(sys (str "echo " "a" ">>1.txt")) ;print-to-file
+
 
 ;matrix:
 ;'(1 2 3 4 5 6) --m*3->
