@@ -1,8 +1,9 @@
-; Chez-lib.ss v1.4b - Written by Faiz
+; Chez-lib.ss v1.4e - Written by Faiz
 
 #|
-  logging: -- about: 22.85 chars/line    
-    v1.4a: def/defa supports disordered-default-paras    
+  logging: -- about: 22.85 chars/line
+    v1.4e: Fixed bug of +.ori
+    x v1.4a: def/defa supports disordered-default-paras    
     
   suffixes:
     @ bad / slow
@@ -41,6 +42,7 @@
     eq, =, eql
 
   todo:
+    see to: verb.adj.a./act, prep./judge,
     lam/defa lam_ 
     [random-seed (floor->fix(w* (elapse(fib 500000))))] ;too closed ;~> parallel universe id bytes, not work well
       time.ms->md5->cost.ns?
@@ -105,6 +107,11 @@
     def-syn doesnt supp recursion directly, but case
     def-syn cant be in ano def-syn
     
+  beauties:
+    reverse flat deep-count bump
+  to-be-beauty:
+    curry compose
+    
   to-try
     walker 
     
@@ -112,15 +119,16 @@
     ;def_: fluid-let-syntax
     def-syn
     def f g -> alias f g
-    def_/def -> def (def (_ ..) ..) ..
+    ;def_/def -> def (def (_ ..) ..) ..
     nilp (cdr xs)
     [] -> ()
     (small .. big) -> (big .. small)
+    ?: setq
     
   to-debug:
     (trace fib)?, assert&print, debug?, call/cc+assert+return.false ...
 
-  flow: work->fast->safe?->complete
+  flow: work->fast->safe->complete
     ;must-inits
     ; main-apis
     ;apis-for-main
@@ -131,6 +139,7 @@
   common:
     (_ X x)
     ? syt -> '
+    common/special... common-special...
 |#
 
 (alias ali      alias)
@@ -146,27 +155,31 @@
 (alias els      else)
 (alias fn       lambda)
 (alias progn    begin)
-(alias vec vector)
-(alias vecp vector?)
-(alias vec-ref vector-ref)
-(alias vec->lis vector->list)
-(alias lis->vec list->vector)
-(alias veclen vector-length)
+(ali vec      vector)
+(ali vecp     vector?)
+(ali vec-ref  vector-ref)
+(ali vec->lis vector->list)
+(ali lis->vec list->vector)
+(ali veclen   vector-length)
 
-(def-syn define*
-  (syn-ruls ()
+(def-syn define* ;
+  (syn-ruls () ;
     ( [_ x]
-      (define x *v) ) ;
+      (define* x *v) )
     ( [_ (g . args) body ...]
       (define (g . args) body ...) )
-    ; ( [_ g (args ...)] ;x(def a '(...))
-      ; (define* (g args ...)) )
+    ; ( [_ g (args ...)] ;x _ ' ... ;(def a '(...))
+      ; (define (g args ...) *v) )      
     ( [_ x e]
-      (define x e) )
-    ( [_ g (args ...) body ...] ;
-      (define* (g args ...) body ...) )
+      (define x e) ) ;symp? e: e *v
+      
+    ;Plz use defn instead of the followings, and they make def slow:
+    ; ( [_ g (args ...) body ...]
+      ; (define (g args ...) body ...) ) ;
+    ; ( [_ g args body ...] ;
+      ; (define (g . args) body ...) )
 ) )
-(alias def define*) ;(def asd (x) x)
+(ali def define*)
 
 (def-syn defm ;define-macro <- define-syntax ;to-add (void)
   (syn-ruls ()
@@ -179,57 +192,56 @@
       (defm (f args ...) body ...)
 ) ) )
 
-(alias nilp  null?)
-(alias first car)
-(alias rest  cdr)
-(alias eq    eq?)
-(alias equal equal?)
-(alias eql   equal?)
-(alias ==    equal?)
-(alias ?: if)
-(alias ?  if)
-(alias !  not)
-(alias sym?   symbol?)
-(alias bool?  boolean?)
-(alias int?   integer?)
-(alias num?   number?)
-(alias str?   string?)
-(alias lisp   list?)
-(alias consp  pair?)
-(alias pairp  pair?)
-(alias fn?    procedure?)
-(alias voidp  void?) ;voip
-(alias atomp  atom?) ;atop
-(alias nump   number?)
-(alias exa->inexa exact->inexact)
-(alias inexa->exa inexact->exact)
-(alias sym->str symbol->string)
-(alias ev     eval)
-(alias reduce apply) ;
-(alias redu   apply) ;
-(alias strcat string-append)
-(alias foldl  fold-left)
-(alias foldr  fold-right)
-(alias mod remainder) ;
-(alias %   mod) ;
-(alias ceil ceiling)
-(alias 1st  first)
-(alias 2nd  cadr)
-(alias 3rd  caddr)
-(alias identities values)
-(alias repl new-cafe)
-(alias fmt format)
-(alias exec command-result) ;
-(alias sys system)
-(alias q exit)
-(alias str-append string-append)
-(alias len length)
-(alias newln newline)
-(alias nil?  null?)
+(ali nilp  null?)
+(ali first car)
+(ali rest  cdr)
+(ali eq    eq?)
+(ali equal equal?)
+(ali eql   equal?)
+(ali ==    equal?)
+(ali ?: if)
+(ali ?  if)
+(ali !  not)
+(ali sym?   symbol?)
+(ali bool?  boolean?)
+(ali int?   integer?)
+(ali num?   number?)
+(ali str?   string?)
+(ali lisp   list?)
+(ali consp  pair?)
+(ali pairp  pair?)
+(ali fn?    procedure?)
+(ali voidp  void?) ;voip
+(ali atomp  atom?) ;atop
+(ali nump   number?)
+(ali exa->inexa exact->inexact)
+(ali inexa->exa inexact->exact)
+(ali sym->str symbol->string)
+(ali ev     eval)
+(ali reduce apply) ;
+(ali redu   apply) ;
+(ali strcat string-append)
+(ali foldl  fold-left)
+(ali foldr  fold-right)
+(ali mod remainder) ;
+(ali %   mod) ;
+(ali ceil ceiling)
+(ali 1st  first)
+(ali 2nd  cadr)
+(ali 3rd  caddr)
+(ali identities values)
+(ali repl new-cafe)
+(ali fmt format)
+(ali exec command-result) ;
+(ali sys system)
+(ali q exit)
+(ali str-append string-append)
+(ali len length)
+(ali newln newline)
+(ali nil?  null?)
 
 (ali redu~ redu~/fold)
 (ali strhead! string-truncate!)
-
 
 ;
 
@@ -253,6 +265,7 @@
           )
           ...
 ) ) ) ) )
+(ali def-syt def-syn)
 (ali defsyt defsyn)
 
 (def-syn (if% stx)
@@ -286,10 +299,11 @@
 ; ) ) )
 
 (defsyn defun
-  ( [_ f (args ...)]
+  ( [_ f (args ...) ]
     (define (f args ...) *v) )
-  ( [_ f args]
+  ( [_ f args ]
     (define (f . args) *v) ) ;
+    
   ( [_ f args ...]
     (define f (lam args ...)) )
 )
@@ -413,15 +427,16 @@
 
 (def *f #f)
 (def *t #t)
-(def *v (void) )
-(def *e '[(err)] ) ;
-(def spc " ")
+(def *v (void))
+(def *e '[(err)]) ;
 (def nil '()) ;
-(def Fal *f) ;
-(def Tru *t)
-(def No  *f)
-(def Yes *t)
-(def Err *v) ;
+(def spc " ")
+(def Fal  *f) ;
+(def Tru  *t)
+(def No   *f)
+(def Yes  *t)
+(def Void *v)
+(def Err  *v) ;
 
 (def void? (curry eq *v))
 (def (str/pair? x) [or(string? x)(pair? x)]) ;x
@@ -472,7 +487,7 @@
   (if (nilp ys) xs
     (append xs ys) ;! a a -> cycle
 ) )
-;(def conj conz)
+;(ali conj conz)
 
 (defsyn sy/num-not-defa-vals%
   ([_ () n] n)
@@ -486,7 +501,7 @@
 )
 
 ;(_ '(a [b 2] [c]))
-(def num-not-defa-vals (paras)
+(defn num-not-defa-vals (paras)
   (def (_ paras n)
     (if (nilp paras) n
       (let ([a (car paras)][d (cdr paras)])
@@ -542,14 +557,14 @@
   [rev (_ paras vals nths-defa-part nths-not-defa nths-defa-rest nil)]
 )
 
-(defsyn defa-def ;(_ (g [a] [b 2] [c ]) (+ a b c))
-  ( [_ (g . paras) body ...] (defa-def g paras body ...)) 
+(defsyn def/defa ;(_ (g [a] [b 2] [c ]) (+ a b c))
+  ( [_ (g . paras) body ...] (def/defa g paras body ...)) 
   ( [_ g paras% body ...]
     (define (g . args) ;
       (let ([paras (list-elements 'paras%)]) ;
         (define f% [ev `(lam ,(map car paras) body ...)]) ;
         (letn ( [paras-ln (len paras)]
-                [num-not-defa (num-not-defa-vals paras )] ;
+                [num-not-defa (num-not-defa-vals paras)] ;
                 [vals-ln (len args)]
                 [n-head (- vals-ln num-not-defa)]
                 [n-tail (- paras-ln vals-ln)] )
@@ -559,16 +574,15 @@
               n-head num-not-defa n-tail
 ) ) ) ) ) ) )
 ;We may def func again with some defa paras, and test the func with just one variable para.
-;(def/defa asd ([a 2] b [c *]) (c a b)) ;(asd 3) ;(asd 4 3) ;(asd 4 3 +)
+;(def/defa asd ([a 2] b [c *]) (c a b)) (asd 3) (asd 4 3) (asd 4 3 +)
 ;(ali defa-def defa-def2)
 
-(defsyn def/defa ;(_ (g [a] b (c 3) (d 4) e) (+ a b c d)) ;lam/defa ;todo: test@, (d 4) e
-  ( [_ (g . paras) body ...] (def/defa g paras body ...))
-  ( [_ g paras body ...]
-    ;(ev `(defa-def g ,(list-elements 'paras) body ...))
-    (defa-def g paras body ...)
-) )
-(ali def/para def/defa)
+; (defsyn def/defa ;(_ (g [a] b (c 3) (d 4) e) (+ a b c d)) ;lam/defa ;todo: test@, (d 4) e
+  ; ( [_ (g . paras) body ...] (def/defa g paras body ...))
+  ; ( [_ g paras body ...]
+    ; (defa-def g paras body ...)
+; ) )
+(ali def/values def/defa)
 
 ;common
 
@@ -840,7 +854,6 @@
 )
 
 
-
 ; (defn conz! (xs . ys) ;->syn
   ; (set-cdr! (last-pair xs) ys)
   ; xs
@@ -875,14 +888,6 @@
     (_ xs)
 ) )
 
-(defn rev (xs)
-  (def (_ xs ret)
-    (if (nilp xs) ret
-      (_ (cdr xs) [cons (car xs) ret])
-  ) )
-  (_ xs nil)
-)
-(alias rev! reverse!)
 
 ;sy-
 
@@ -1276,7 +1281,11 @@
     ; ((atom?   x) (sym->str           'x)) ;
     ; (els          "")
 ; ) )
-(defm (raw . xs) 'xs)
+(defm (raw . xs) ;
+  (if~ (nilp 'xs) nil
+    (cdr-nilp 'xs) (car 'xs)
+    'xs
+) )
 
 (def (any->str x)
   (cond
@@ -1461,9 +1470,7 @@
 ;cl
 
 (ali atom atom?)
-
 (ali null null?)
-
 (ali second cadr)
 
 (defsyn getf
@@ -1517,7 +1524,7 @@
 (def (str-explode s)
   (map char->string(string->list s))
 )
-(def str->ss str-explode)
+(ali str->ss str-explode)
 
 
 ;C
@@ -1556,31 +1563,41 @@
     (li a b)
 ) )
 
-;
-
 (def car-atomp (compose atomp car))
+
+;pieces of the most beautiful code
+
+(defn rev (xs)
+  (def (_ xs ret)
+    (if (nilp xs) ret
+      (_ (cdr xs) [cons (car xs) ret])
+  ) )
+  (_ xs nil)
+)
+(ali rev! reverse!)
 
 (defn flat (xs)
   (def (rec x ret)
-    (cond
-      [(nilp  x) ret]
-      [(atomp x) (cons x ret)] ;
-      [else
-        (rec (car x)
-          (rec (cdr x) ret) ) ]
-  ) )
+    (if*
+      (nilp  x) ret
+      (atomp x) (cons x ret)
+      (rec (car x)
+        (rec (cdr x) ret)
+  ) ) )
   (rec xs nil)
 )
 
-(def d-len (xs)
+(defn deep-length (xs) ;deep-count
   (def (_ x n)
-    (if~ (nilp x) n
+    (if* (nilp x) n
       (atomp x) (1+ n) ;
       (_ (car x)
         [_ (cdr x) n]
   ) ) )
   (_ xs 0)
-) ;(d-len '[((a b)c)(d e)]) ;-> 5
+)
+(ali d-len deep-length) ;d-cnt
+;(d-len '[((a b)c)(d e)]) ;-> 5
 
 (defn flat-and-remov (x xs)
   (let ([g (eq/eql x)])
@@ -1596,12 +1613,12 @@
     (_ xs nil)
 ) )
 
-(def (bump xs fmt) ;bumpl ;(d-len fmt)
+(def (bump xs fmt) ;bumpl/bumpup-lhs
   (def (_ x fmt ret)
     (if~
       (nilp fmt) ret
       (atomp fmt) (cons x ret)
-      (letn ([fa(car fmt)] [ln(d-len fa)] [fd(cdr fmt)] [head(list-head x ln)] [tail(list-tail x ln)]) ;
+      (letn ([fa(car fmt)] [ln(d-len fa)] [fd(cdr fmt)] [head(list-head x ln)] [tail(list-tail x ln)]) ;d-len
         (if (car-atomp fmt) ;car-atomp
           [_ (car x) fa [_ tail fd ret]] ;car
           (cons [_ head fa ret] [_ tail fd ret]) ;cons _ _
@@ -1619,10 +1636,10 @@
 (defn fal? (b)
   (if (eq *f b) *t *f)
 )
-(defn neq (x y) (not(eq x y)) )
-(defn !eql(x y) (not(eql x y)) )
+(defn  neq (x y) [not(eq  x y)])
+(defn !eql (x y) [not(eql x y)])
 
-(defn tyeq (x y)
+(defn tyeq (x y) ;
   (eq(ty x)(ty y))
 )
 (defn ty-neq (x y)
@@ -2042,7 +2059,7 @@
     (rev (_ nil xs))
 ) )
 
-(def (arb-group xs . ns) ;
+(def (arb-group xs . ns) ;arbitrarily
   (def (_ xs n ms tmp ret)
     (if (nilp xs) (cons [rev tmp] ret)
       (if (nilp ms)
@@ -2067,7 +2084,6 @@
   (_ xs nil)
 )
 
-
 (def (explode-sym sym) ;[explode 'asd] ~> '[a s d]
   (map string->symbol [str->ss (sym->str sym)])
 )
@@ -2083,12 +2099,12 @@
       xs
 ) ) )
 
-(def +.ori +) ;
-(def (my+ . xs) ;(my+ '(1 2))
-  (redu~ +.ori [flat xs]) ;
+(def +.ori +) ;+.0
+(def (my+ . xs) ;(my+ '(1 () 2))
+  (redu~ +.ori [flat xs]) ;todo: try / sum-of-list
 )
 ;(dmap [lam(x)(if[nilp x]0 x)] xs)
-(def + my+) ;need to be restored bef reload this script
+;(def + my+) ;to test (fib0 38) ;need to be restored bef reload this script ;10x slow
 
 (def (fast-expt-algo x n g x0) ;g need to meet the Commutative Associative Law
   (def (_ n)
@@ -2138,19 +2154,15 @@
   (fast-expt-algo m n mat-mul (mat-unitof m)) ;(fast-expt-algo m n mat-mul '[(1 0)(0 1)])
 )
 
-(def (fib0 n)
-  ;(let ([st(clock)] [1st Fal])
-    (def (_ n)
-      (if (< n 3) 1 ;
-        ; (bgn
-          ; (if [=0 (%[- (clock) st]100)]
-            ; (when 1st (setq 1st Fal) (echo ".") [k?(+ [_ (fx- n 1)] [_ (fx- n 2)])]) ;call/cc (lam(k)...) ;see to yin/yang
-            ; (setq 1st Tru) )
-          (+ [_ (fx- n 1)] [_ (fx- n 2)])
-    ) ) ;)
-    (if (< n 0) 0
-      (_ n)
-) ) ;)
+(define (fib0 n)
+  (define (_ n) ;
+    (if (< n 3) 1
+      (+ [_ (fx- n 2)] [_ (fx- n 1)])
+  ) )
+  (if (< n 0) 0
+    (_ n)
+) )
+;(time (fib0 38)) ;realtime = 0.170~1.403 s ;adm tool ;i don't why chez-lib is slow
 
 (def (fib1 n) ;gmp: (fib 1E) just 1s
   ;(let ([st(clock)] [1st Fal])
@@ -2188,7 +2200,7 @@
   ) )
   [_ 1 n]
 )
-;(elapse(fac 50000)) ;=> elapse = 1.559 s
+;(elapse(fac 50000)) ;=> elapse = 1.559~1.563 s
 
 (defn round% (x)
   (let ([f (floor x)])
@@ -2342,7 +2354,40 @@
           (rev (cdr r))
 ) ) ) ) )
 
-(defn quine (g) `(,g ',g))
+; ((lambda (x) (list x (list 'quote x)))
+  ; '(lambda (x) (list x (list 'quote x)))))
+; ((lam (g) (li g (li 'quo g)))
+  ; '(lam (g) (li g (li 'quo g)))))
+; ((lam (g) (li g `(',g))) '(lam (g) (li g `(',g)))))
+; ((lam (g) `(,g (',g))) '(lam (g) `(,g (',g)))))
+; ((lam (g) `(,g '(,g))) '(lam (g) `(,g '(,g)))))
+
+; ((lam (g) `(,g ',g)) '(lam (g) `(,g ',g))))
+     
+(def (quine-f g) `(,g ',g)) ;[_ '_] `,_ ' ;(quine 'quine) (ev(quine 'quine)) (eql (quine 'quine) (ev(quine 'quine)))
+(defm (quine g) `(,'g ,'g))
+
+(def/defa (ev-n x [m 1])
+  (def (_ x n)
+    (if~ (> n m) x
+      ; (let ([ret (ev x)])
+        ; (if~ (eql x ret) x ;?
+      [_ (ev x) (1+ n)]
+  ) ) ;) )
+  (_ x 1)
+)
+
+(ali bad-cond? condition?)
+(def (full-eval x) ;
+  (def (_ x)
+    (let ([ret (try(ev x))])
+      (if~ (bad-cond? ret) x
+        (eql x ret) x
+        [_ ret]
+  ) ) )
+  (_ x)
+)
+(ali ev-full full-eval)
 
 ; (defsyn lam-snest
   ; ([x] nil)
@@ -2353,7 +2398,7 @@
 (defn nex-prime (p)
   (prime p 2) ;
 )
-(alias inc 1+) ;for church's f, use 1+ is not rooty
+(ali inc 1+) ;for church's f, use 1+ is not rooty
 
 ;(def (zero f) (lam(x) x))
 ;(def (one f) (lam(x) (f x))) ;((one inc) 0)
@@ -2754,7 +2799,6 @@
   (_ xs nil)
 )
 
-
 ;
 (def (randnums n) ;(random-seed elapse)
   (def (_ m)
@@ -2765,10 +2809,9 @@
 )
 
 ;exercise
-(alias cond? condition?)
 (defsyn try
   ([_ exp]
-    (guard (x(els x)) exp) ;(condiction? #condition) -> *t
+    (guard (x (els x)) exp) ;(condition? #condition) -> *t
 ) )
 
 (defn_ exist-cond? (g x xs)
@@ -3148,5 +3191,5 @@
     ; car car.ori
     ; cdr cdr.ori
     ; map map.ori
-    +   +.ori
+    ;+   +.ori
 ) )

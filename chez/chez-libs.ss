@@ -1,8 +1,8 @@
-; Chez-lib.ss v2.00 - Written by Faiz
+; Chez-lib.ss v2.01 - Written by Faiz
 
 #|
   update notes:
-    2020-1-6 v2.00: modularization
+    2020-1-11 v2.01: modularization
 
   suffixes:
     @ bad / slow

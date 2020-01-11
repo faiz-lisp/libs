@@ -176,7 +176,7 @@
   (redu~ +.ori [flat xs]) ;
 )
 ;(dmap [lam(x)(if[nilp x]0 x)] xs)
-(def + my+) ;need to be restored bef reload this script
+;(def + my+) ;(fib0 38) ;need to be restored bef reload this script
 
 
 (def (fast-expt-algo x n g x0) ;g need to meet the Commutative Associative Law
