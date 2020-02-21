@@ -1,4 +1,4 @@
-; Chez-lib.ss v1.53 - Written by Faiz
+; Chez-lib.ss v1.55 - Written by Faiz
 
 #|
   logging: -- about: 22.85 chars/line
@@ -589,10 +589,10 @@
     (foldl g (car xs) (cdr xs)) ;wrong sometimes: values map echo ;echo ~> '(*v) ;evs ;i/o
 ) ) ;curry?
 
-(def-syn vec-for
+(def-syn vec-for ;
   (syn-ruls (in)
     ( [_ i in ve body ...]
-      (quiet
+      (quiet ;
         (vector-map ;
           (lambda (i)
             body ... )
@@ -2440,11 +2440,11 @@
   (_ x 1)
 )
 
-(alias bad-cond? condition?)
+(alias try-fail? condition?)
 (def (full-eval x) ;
   (def (_ x)
     (let ([ret (try(ev x))])
-      (if~ (bad-cond? ret) x
+      (if~ (try-fail? ret) x
         (eql x ret) x
         [_ ret]
   ) ) )
@@ -2756,14 +2756,24 @@
   [_ xs]
 )
 
+; (def (vec-foldl g x ve) ;walker? ref nilp
+  ; (vec-for y in ve ;
+    ; [set! x (g x y)] ) ;tmp ;(_ g tmp ve) try
+  ; x
+; )
 (def (vec-foldl g x ve)
-  (vec-for y in ve
-    [set! x (g x y)] ) ;
-  x
-)
+  (let ([n (vec-len ve)])
+    (def (_ ret i)
+      (if (>= i n) ret
+        (let ([y (vec-ref ve i)]) ;try is slow
+          [_ (g ret y) (1+ i)]
+    ) ) )
+    (_ x 0)
+) )
 
 (def (vec-redu g ve) ;slower than redu
-  (vec-foldl g (vec-car ve) (vec-cdr ve)) ;
+  ;(vec-foldl g (vec-car ve) (vec-cdr ve)) ;
+  (redu g (vec->lis ve))
 )
 
 (def (vec-swap! ve i j) ;!
@@ -2901,7 +2911,7 @@
       *f
       (if (<= cnt 0)
         (letn ( [tes (try (g))]
-                [b   (if (not(cond? tes)) tes *f)] )
+                [b   (if (not(try-fail? tes)) tes *f)] )
           (if b ret *f) ) ;end
         (letn ( [x (xth xs i)]
                 [b (~ (g x) (- cnt 1)  xs 0  ret)]  ) ;inner
