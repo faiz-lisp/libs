@@ -1,9 +1,9 @@
-; Chez-lib.ss v1.4g - Written by Faiz
+; Chez-lib.ss v1.53 - Written by Faiz
 
 #|
   logging: -- about: 22.85 chars/line
-    v1.4g: Make it r6rs compliant !
-    v1.4e: Fixed bug of +.ori !
+    v1.4g: Make it r6rs compliant
+    v1.4e: Fixed bug of +.ori
     x v1.4a: def/defa supports disordered-default-paras
     
   suffixes:
@@ -142,6 +142,10 @@
     ? syt -> '
     common/special... common-special...
 |#
+(import (chezscheme)) ;for --program parameter
+
+;#%car = ($primitive car) = ($primitive 1 car) = car
+;#%car = ($primitive car) = ($primitive 1 car) = car
 
 (alias ali      alias)
 (alias imp      import)
@@ -217,7 +221,7 @@
 (alias reduce apply) ;
 (alias redu   apply) ;
 (alias strcat string-append)
-(alias foldl  fold-left)
+(alias foldl  fold-left) ;
 (alias foldr  fold-right)
 (alias mod remainder) ;
 (alias %   mod) ;
@@ -550,6 +554,7 @@
   [rev (_ paras vals nths-defa-part nths-not-defa nths-defa-rest nil)]
 )
 
+;(call-with-values (lam()(values 'a 'b vc)) g)
 (defsyn def/defa ;(_ (g [a] [b 2] [c ]) (+ a b c))
   ( [_ (g . paras) body ...] (def/defa g paras body ...)) 
   ( [_ g paras% body ...]
@@ -563,7 +568,7 @@
                 [n-tail (- paras-ln vals-ln)] )
           ;(echol n-head num-not-defa n-tail)
           (redu f%
-            (defa->vals/aux paras [list-head args paras-ln] ;
+            (defa->vals/aux paras [head args paras-ln] ;
               n-head num-not-defa n-tail
 ) ) ) ) ) ) )
 ;We may def func again with some defa paras, and test the func with just one variable para.
@@ -838,14 +843,22 @@
         [_ (car yz) (cdr yz)]
         (cons (car xs) [_ (cdr xs) yz])
   ) ) )
-  (let ([xz2 (remov-nil xz)])
-    (_ (car xz2) (cdr xz2)) ;
+  (let ([xz-new (remov-nil xz)])
+    (_ (car xz-new) (cdr xz-new)) ;
 ) )
 
 (def (append~ . xz)
   (apply append (remov-nil xz))
 )
 
+
+(def (rev-append xs ys) ;rev xs then append
+  (def (_ xs ys)
+    (if (nilp xs) ys
+      [_ (cdr xs) (cons(car xs)ys)]
+  ) )
+  (_ xs ys)
+)
 
 ; (defn conz! (xs . ys) ;->syn
   ; (set-cdr! (last-pair xs) ys)
@@ -1039,7 +1052,7 @@
   (_ xs ys nil)
 )
 
-(def (list-tail xs m) ;*
+(def (tail xs m) ;*
   (def (_ xs m)
     (if* (nilp xs) nil
       (< m 1) xs
@@ -1047,7 +1060,7 @@
   ) ) 
   (_ xs m)
 )
-(def (list-head xs m) ;%
+(def (head xs m) ;%
   (def (_ xs ret m)
     (if* (nilp xs) ret
       (< m 1) ret
@@ -1175,8 +1188,8 @@
 )
 (defsyt insert-xth!
   ([_ xs i y]
-    (letn([pre (list-head xs i)]
-          [pos (list-tail xs i)])
+    (letn([pre (head xs i)]
+          [pos (tail xs i)])
       (setq xs (append! pre (cons y pos)))
 ) ) )
 (defsyn swap-xths!
@@ -1221,6 +1234,28 @@
     ([_ . args]
       #'(cons* . args)
 ) ) )
+
+;(list-replace '(#\a #\~ #\d #\x) '(#\~ #\d) '(#\1 #\2 #\3) 1)
+;(list-replace '(#\a #\~ #\d #\x #\~ #\d) '(#\~ #\d) '(#\1 #\2 #\3))
+(def/defa (list-replace xs ori new [num -1] [== eql]) ;
+  (def (_ xs xx num tmp)
+    (if (nilp xx)
+      (append new [_ xs ori (1- num) nil]) ;
+      (if (nilp xs) nil
+        (if (= 0 num) xs
+          (let ([a(car xs)] [d(cdr xs)])
+            (if (== a (car xx))
+              [_ d (cdr xx) num (cons a tmp)]
+              (rev-append (cons a tmp) [_ d xx num nil])
+  ) ) ) ) ) )
+  (_ xs ori num nil)
+)
+
+(def/defa (str-replace ss ori new [num -1]) ;(_ "asd~ddsa" "~d" "123" [-1])
+  (list->string
+    [redu (rcurry list-replace num eq)
+      [map string->list (li ss ori new)] ]
+) )
 
 
 (def (command-result cmd)
@@ -1350,9 +1385,9 @@
 (def (ncdr xs n)
   (if*
     [< n 0]
-     (list-head xs (+ (len xs) n)) ;@
+     (head xs (+ (len xs) n)) ;@
     [> n 0]
-     (list-tail xs n) ;if outofrange?    
+     (tail xs n) ;if outofrange?    
     xs    
 ) )
 
@@ -1524,12 +1559,25 @@
 
 
 (alias ref list-ref)
-(def (xth xs i) ;%
-  (if (nilp xs) nil ;
-    (if (< i 0) nil
-      (list-ref xs i) ;use len wil be slow
-) ) )
-(def (nth xs n) (xth xs (- n 1)))
+
+(def (xth xs . iths)
+  ; (def (once x i)
+    ; (if (atomp x) x ;< i 1 car ;cdr-nilp x car
+      ; (list-ref x i)
+  ; ) )
+  (def (_ x iths i) ;
+    (if (nilp iths) [list-ref x i]
+      [_ (list-ref x i) (cdr iths) (car iths)] ;
+  ) )
+  (_ xs (cdr iths) (car iths)) ;
+)
+(def (nth xs . nths)
+  (def (_ x nths i) ;
+    (if (nilp nths) [list-ref x i]
+      [_ (list-ref x i) (cdr nths) (1-(car nths))] ;
+  ) )
+  [_ xs (cdr nths) (1-(car nths))] ;
+)
 
 ;lisp use quo and defsyn, instead of get-addr in c
 (defsyn swap
@@ -1597,10 +1645,10 @@
     (if~
       (nilp fmt) ret
       (atomp fmt) (cons x ret)
-      (letn ([fa(car fmt)] [ln(d-len fa)] [fd(cdr fmt)] [head(list-head x ln)] [tail(list-tail x ln)]) ;d-len
+      (letn ([fa(car fmt)] [ln(d-len fa)] [fd(cdr fmt)] [head.(head x ln)] [tail.(tail x ln)]) ;d-len
         (if (car-atomp fmt) ;car-atomp
-          [_ (car x) fa [_ tail fd ret]] ;car
-          (cons [_ head fa ret] [_ tail fd ret]) ;cons _ _
+          [_ (car x) fa [_ tail. fd ret]] ;car
+          (cons [_ head. fa ret] [_ tail. fd ret]) ;cons _ _
   ) ) ) )
   (_ xs fmt nil)
 )
@@ -1726,6 +1774,14 @@
 (def len<=1 (compose <=1 len))
 
 (alias inexa inexact)
+
+(def (xor . xs)
+  (def (xor2% a b) ;logical ;(bitwise-xor 1 1 2 2 2 2 3 3 3)
+    (if~ [eq a b] Fal
+      Tru
+  ) )
+  (redu~ xor2% [map not xs]) ;not issue when: (xor x)
+)
 
 (def (avg . xs) (/ (redu~ + xs) (len xs)))
 (def %
@@ -1871,6 +1927,13 @@
 ) ) )
 
 (def inc-1 (rcurry - 1))
+
+(def (strnum- . snums)
+  (number->string (redu~ - (map string->number snums)))
+)
+(def (strnum+ . snums)
+  (number->string (redu~ + (map string->number snums)))
+)
 
 ;math end
 
@@ -2032,10 +2095,10 @@
   (let ([m (if [= 0 m]1 m)]) ;
     (def (_ ret xs)
       (if (nilp xs) ret
-        (let ([a(list-head xs m)] [d(list-tail xs m)]) ;
-          [_ (cons a ret) d]
+        (let ([aa (head xs m)] [dd (tail xs m)]) ;
+          [_ (cons aa ret) dd]
     ) ) )
-    (rev (_ nil xs))
+    (rev (_ nil xs)) ;
 ) )
 
 (def (arb-group xs . ns) ;arbitrarily
@@ -2250,14 +2313,17 @@
 ;a mat: '((1 2 3)(4 5 6))
 ;((mat m 3) 1 2 3 4 5 6)
 ;(_ numForOneRow aFlattenList): (_ 3 (range 6)) -> '((0 1 2)(3 4 5))
-; (defn_ lis2mat (lst per)
-  ; (if (<= (len lst) per)
-    ; (li lst)
-    ; (cons (carn per lst) (_ (cdrn per lst) per));;
+
+(ali lis2mat group) ;(lis2mat '(1 2 3 4 5) 2) -> ((1 2) (3 4) (5 0))?
+; (def (_ xs)
+  ; (if (<= (len xs) per) ;
+    ; (li xs)
+    ; (cons (head xs per) [_ (tail xs per)]) ;
 ; ) )
-(defn mat2lis (mat) ;matrix->list: matrix1
-  (flat mat)
-)
+(ali mat2lis flat)
+
+(ali mat-ref xth)
+
 ;?matlen submat
 (def (dotmul da db) ;(1,2,3)*(4,5,6) ;dot-multiply: point1 point2
   (redu~ + (map * da db)) ;
@@ -2588,6 +2654,13 @@
 
 ;vec: mk-vec n; vec-fill!; vec-set! v i x; 
 
+(alias vec-copy vector-copy)
+(alias mk-vec make-vector)
+(alias vec-len vector-length)
+(alias vec-set-fnum! vector-set-fixnum!)
+(alias vec-set! vector-set-fixnum!)
+(alias vecar vec-car)
+
 (def-syn (ve-push* stx)
   (syn-case stx () ;
     ([_ args ... x]
@@ -2604,7 +2677,8 @@
 ) )
 (alias vnilp vec-nilp)
 
-(def num->lis (curry apply/reducing-num cons))
+;(def num->lis (curry apply/reducing-num cons)) ;
+(def num->lis range)
 
 (def vnil (vec))
 (def (vec-car v) (vec-ref v 0))
@@ -2654,12 +2728,6 @@
 ) )
 (alias veconz vec-conz)
 
-(alias vec-copy vector-copy)
-(alias mk-vec make-vector)
-(alias vec-len vector-length)
-(alias vec-set-fnum! vector-set-fixnum!)
-(alias vec-set! vector-set-fixnum!)
-(alias vecar vec-car)
 
 (def (vec-head ve n) ;
   (letn ([ret (mk-vec n)])
@@ -2694,8 +2762,8 @@
   x
 )
 
-(def (vec-redu g ve)
-  (vec-foldl g (vec-car ve) (vecdr ve)) ;
+(def (vec-redu g ve) ;slower than redu
+  (vec-foldl g (vec-car ve) (vec-cdr ve)) ;
 )
 
 (def (vec-swap! ve i j) ;!
@@ -2726,7 +2794,7 @@
 (def (vec-append . vz)
   (letn ([n (len vz)][ns (map veclen vz)][ret (mk-vec [redu + ns])])
     (for (i n)
-      (vec-copy! ret (redu + [list-head ns i]) (xth vz i)) )
+      (vec-copy! ret (redu + [head ns i]) (xth vz i)) )
     ret
 ) )
 
@@ -2760,8 +2828,8 @@
       ls
       (let ([mid (quotient n 2)])
         (merge~
-          [_ (list-head ls mid) mid]
-          [_ (list-tail ls mid) (fx- n mid)]
+          [_ (head ls mid) mid]
+          [_ (tail ls mid) (fx- n mid)]
   ) ) ) )
   (_ ls (length ls))
 )
@@ -3086,8 +3154,8 @@
 (def_ (sb. e s1) ;exp syms?
   (if* [nilp e] nil
     [atom e] (if[eql e (cadr s1)] (car s1) e) ;
-    (let [(head[_ (car e) s1]) (tail[_ (cdr e) s1])]
-      (cons head tail)
+    (let [(head.[_ (car e) s1]) (tail.[_ (cdr e) s1])]
+      (cons head. tail.)
 ) ) )
 (def_ (substitution. e m)	;置换 exp marks?
   (if* (nilp m) e
