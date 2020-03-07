@@ -1,11 +1,6 @@
-; Chez-lib.ss v1.55 - Written by Faiz
-
 #|
-  logging: -- about: 22.85 chars/line
-    v1.4g: Make it r6rs compliant
-    v1.4e: Fixed bug of +.ori
-    x v1.4a: def/defa supports disordered-default-paras
-    
+# chez-lib.ss v1.5g - written by Faiz
+
   suffixes:
     @ bad / slow
     % theoretic / internal / paras->list
@@ -43,8 +38,11 @@
     eq, =, eql
 
   todo:
+    control[include convert]: strings, files, ...
+    ~(!= 1 2 1), (> 3 2 1), (coprime? 2 15 4)
+    (part-of-num 123456 -3 2)~> 45
     see to: verb.adj.a./act, prep./judge,
-    lam/defa lam_
+    lam/defa lam_ lam/ret
     [random-seed (floor->fix(w* (elapse(fib 500000))))] ;too closed ;~> parallel universe id bytes, not work well
       time.ms->md5->cost.ns?
       . time activities info net:salt io? file:psw/md5
@@ -62,7 +60,6 @@
     (_ xs . x) (-> -> x)
     code:dsl->raw
     api-search 可以 下载个网页, 然后用正则搜索; 每次defn时,记录信息到hashtable
-    有些函数实现的层数/维数太高, 后面需要搞个降维函数. for?, cps?
     church yc algo
     structure:
       skip-list/max-skip-step/for-spec-type/with-logic, path
@@ -84,7 +81,9 @@
     (g x y)~> apply~= reduce-> curry
 
   tolearn:
-    三体是否碰撞的检测, 说是平面会 空间不会? 宇宙遇到三体问题,怎么计算?
+    fork-thread
+    profile
+    eg: chez/examples/matrix.ss
     my: let + redu sort! rand eval
     hygienic assq memq define-structure
     >: [syntax-case see to ;push] defsyn def
@@ -97,7 +96,6 @@
     (trace funxxx) (funxxx ...) can show is it a tail form rec
     hash when def/setq/defsyn ~> api-search
     vec: cons lam/vec def/vec, map for redu, add! del/rm! flat strcat
-    b-plus-tree: '[(8? 15) () () ([1 2][4 5][6 8][9 11][12 15])]
     sy: rev, vec? flat append? group
     sort: qsort heap merge
     abs(fxnum) <= 2^29-1 (> 5E)    
@@ -110,6 +108,7 @@
     
   beauties:
     reverse flat deep-count bump
+    
   to-be-beauty:
     curry compose
     
@@ -117,14 +116,13 @@
     walker 
     
   to-optimize:
-    ;def_: fluid-let-syntax
     def-syn
     def f g -> alias f g
-    ;def_/def -> def (def (_ ..) ..) ..
     nilp (cdr xs)
     [] -> ()
     (small .. big) -> (big .. small)
     ?: setq
+    听说cond要按发生概率高低来排序
     
   to-debug:
     (trace fib)?, assert&print, debug?, call/cc+assert+return.false ...
@@ -141,8 +139,12 @@
     (_ X x)
     ? syt -> '
     common/special... common-special...
+
+```
 |#
+
 (import (chezscheme)) ;for --program parameter
+;(collect-request-handler void) ;~ for some optimizing
 
 ;#%car = ($primitive car) = ($primitive 1 car) = car
 ;#%car = ($primitive car) = ($primitive 1 car) = car
@@ -165,7 +167,7 @@
 (alias vec-ref  vector-ref)
 (alias vec->lis vector->list)
 (alias lis->vec list->vector)
-(alias veclen   vector-length)
+(alias vec-len  vector-length)
 
 (def-syn define*
   (syn-ruls () ;
@@ -555,7 +557,7 @@
 )
 
 ;(call-with-values (lam()(values 'a 'b vc)) g)
-(defsyn def/defa ;(_ (g [a] [b 2] [c ]) (+ a b c))
+(defsyn def/defa ;(_ (g [a] [b 2] [c ]) (+ a b c)) ;test on fib0 found some issue
   ( [_ (g . paras) body ...] (def/defa g paras body ...)) 
   ( [_ g paras% body ...]
     (define (g . args) ;
@@ -565,8 +567,7 @@
                 [num-not-defa (num-not-defa-vals paras)] ;
                 [vals-ln (len args)]
                 [n-head (- vals-ln num-not-defa)]
-                [n-tail (- paras-ln vals-ln)] )
-          ;(echol n-head num-not-defa n-tail)
+                [n-tail (- paras-ln vals-ln)] ) ;(echol n-head num-not-defa n-tail)
           (redu f%
             (defa->vals/aux paras [head args paras-ln] ;
               n-head num-not-defa n-tail
@@ -1251,11 +1252,12 @@
   (_ xs ori num nil)
 )
 
-(def/defa (str-replace ss ori new [num -1]) ;(_ "asd~ddsa" "~d" "123" [-1])
+(def/defa (string-replace* ss ori new [num -1]) ;(_ "asd~ddsa" "~d" "123" [-1])
   (list->string
     [redu (rcurry list-replace num eq)
       [map string->list (li ss ori new)] ]
 ) )
+(ali str-replace string-replace*)
 
 
 (def (command-result cmd)
@@ -1361,8 +1363,8 @@
 (def (xn-mk-list . xns) (xn-mk-list% xns))
 
 (defn nx->list (n x) ;a bit faster than make-list
-  (defn _ [n rest]
-    (cond [(<= n 0) rest]
+  (def (_ n rest)
+    (cond [(< n 1) rest]
       [else
         (_ (- n 1) [cons x rest]) ] ; cons is fast
   ) )
@@ -1501,6 +1503,29 @@
 (alias null null?)
 (alias second cadr)
 
+(define (union x y)
+  (if (pair? x)
+    (if (memv (car x) y) ;
+      (union (cdr x) y)
+      (cons (car x) (union (cdr x) y)))
+    y
+) )
+
+(define (every pred lst)
+  (if (pair? lst)
+    (if (pred (car lst))
+      (every pred (cdr lst))
+      #f)
+    #t
+) )
+
+(define (some pred lst)
+  (if (pair? lst)
+    (or (pred (car lst))
+      (some pred (cdr lst)))
+    #f
+) )
+      
 (defsyn getf
   ((_ xs xtag)
     (if (<(len xs)2) nil
@@ -1755,7 +1780,7 @@
 
 (alias =0 =0?)
 (alias =1 =1?)
-(def not= (compose not =))
+(def (not= a b) (not(= a b))) ;!==
 (alias != not=)
 (def !=0 (compose not =0))
 (alias >> bitwise-arithmetic-shift-right)
@@ -1796,6 +1821,23 @@
     (fold-left expt (car xs) (cdr xs))
 ) )
 
+(def (not-exist-meet? g xs)
+  (def (once ys x)
+    (if (nilp ys) Tru ;
+      (if (g x (car ys)) Fal
+        [once (cdr ys) x]
+  ) ) )
+  (def (_ ys x)
+    (if (nilp ys) Tru ;
+      (if (once ys x)
+        [_ (cdr ys) (car ys)]
+        Fal
+  ) ) )
+  (_ (cdr xs) (car xs))
+)
+(def (!==  . xs) [not-exist-meet? =   xs])
+(def (!eql . xs) [not-exist-meet? eql xs])
+
 (setq *max-deviation* (- [expt(sqrt 2)2] 2)) ;?
 (setq *max-deviation-ratio* [-(/ (expt(sqrt 2)2) 2)1])
 (def (~= a b)
@@ -1818,29 +1860,27 @@
   (def (_ n tmp max.)
     (if (<= tmp max.)
       (if (!= (% n tmp) 0)
-        (_ n (+ 2 tmp) max.)
-        tmp
-      )
+        [_ n (+ 2 tmp) max.]
+        tmp )
       nil ;
   ) )
   (let ([max. (pow n 1/2)])
     (if (!= (% n 2) 0)
-      (_ n 3 max.) ;n
+      [_ n 3 max.] ;n
       (if (= n 2) nil ;
         2
 ) ) ) )
 (def min-factor min-prime-factor)
 
-;(cost(factors 40224510201988069377423))
 (defn factors (n)
-  (defn _ (n factors.)
-    (letn ([factor (min-factor n)])
+  (def (_ n factors.)
+    (let ([factor (min-factor n)])
       (if (nilp factor)
         (cons n factors.)
-        (_ (/ n factor) (cons factor factors.))
+        [_ (/ n factor) (cons factor factors.)]
   ) ) )
   (_ n nil)
-)
+) ;(cost(factors 40224510201988069377423))
 
 (def_ (infix-prefix% lst) ; need a 
   (if (list? lst)
@@ -1910,7 +1950,7 @@
 
 (alias quot quotient)
 
-(def/defa (nbits num [m 10]) ;@ not for float
+(def/defa (n-digits num [m 10]) ;@ not for float
   (def (_ num n)
     (let ([quo (quot num m)]) ;1 2 4 2 1
       (if [< quo 1] n
@@ -1918,6 +1958,7 @@
   ) ) )
   (_ num 1)
 )
+(ali nbits n-digits)
 
 (def (leap-year? yr)
   (or (=0 [% yr 400])
@@ -1935,10 +1976,10 @@
   (number->string (redu~ + (map string->number snums)))
 )
 
-;math end
+;math end 
 
 (def len-1 (compose inc-1 len))
-(def (find-ref xs x st ed)
+(def (find-ref% xs x st ed)
   (let ([ed (if(nilp ed)(len-1 xs)ed)][= (eq/eql x)])
     (def (_ xs x i)
       (if [= x (car xs)] ;
@@ -2091,7 +2132,7 @@
       #'(rev xs) )
 ) )
 
-(def (group xs m)
+(def (group xs m) ;?(= m per) (group '(1 2 3 4 5 6) 3 1)
   (let ([m (if [= 0 m]1 m)]) ;
     (def (_ ret xs)
       (if (nilp xs) ret
@@ -2169,12 +2210,13 @@
 (def (fast-expt-algo x n g x0) ;g need to meet the Commutative Associative Law
   (def (_ n)
     (if*
-      (= n 0) x0
-      (= n 1) x ;(* x x0) ==> x
-      (letn [(m[_ (>> n 1)]) (y[g m m])]
-        (if (even? n) y
+      (eq n 0) x0
+      (eq n 1) x ;(* x x0) ==> x
+      (letn ([m (_(>> n 1))] [y (g m m)])
+        (if (fxeven? n) y
           [g y x]
-  ) ) ) )
+    ) ) )
+  )
   (_ n)
 ) ; N mod z ?=> a^q*s^w*d^e mod z => ... ; encrypt: 椭圆曲线加密 ; 所有基于群幂的离散对数的加密算法
 
@@ -2191,15 +2233,21 @@
     (_ (car xs) (cadr xs) (cddr xs)) ;
 ) )
 
-(def (mat-unitlen m) [len(car m)])
+(ali mat-unitlen matrix-unitlen)
+(ali mat-unit matrix-unit)
+(ali mat-unitof matrix-unitof)
+(ali mat-mul matrix-mul)
+(ali mat-pow matrix-pow)
 
-(def (mat-unit n)
+(def (matrix-unitlen m) [len (car m)])
+
+(def (matrix-unit n) ;vec?
   (def (once ret m i)
     (def (_ ret m)
       (if (< m 1) ret        
         [_ (cons 0 ret) (- m 1)]
     ) )
-    [_ [cons 1 (xn2lis 0 i)] m]
+    [_ [cons 1 (xn2lis 0 i)] m] ;
   )
   (def (_ ret i m)
     (if [< m 0] ret
@@ -2208,10 +2256,10 @@
   (_ nil 0 (- n 1))
 )
 
-(def (mat-unitof m) [mat-unit(mat-unitlen m)])
+(def (matrix-unitof m) [matrix-unit (matrix-unitlen m)])
 
-(def (mat-pow m n)
-  (fast-expt-algo m n mat-mul (mat-unitof m)) ;(fast-expt-algo m n mat-mul '[(1 0)(0 1)])
+(def (matrix-pow m n)
+  (fast-expt-algo m n matrix-mul (matrix-unitof m)) ;(fast-expt-algo m n mat-mul '[(1 0)(0 1)])
 )
 
 (define (fib0 n)
@@ -2240,12 +2288,12 @@
 (def (fib n)
   (def (fibo pre pos n)
     (caar
-      (mat-mul ;
-        (if [>0 n]
-          (mat-pow '([ 0  1]
-                     [ 1  1]) n)
-          (mat-pow '([-1  1]
-                     [ 1  0]) (- n)) )
+      (matrix-mul  ;
+        (if [>0 n] ; or ret: if odd? n: positive, negative;
+          (matrix-pow '([ 0  1]
+                        [ 1  1]) n) ;matrix may slower than paras
+          (matrix-pow '([-1  1]
+                        [ 1  0]) (- n)) )
         `([,pre]
           [,pos])
   ) ) )
@@ -2333,24 +2381,26 @@
 )
 
 ;middle-function
-(def (mat-1Muln m1 mn) ;'(1 2 3) '((4 7)(5 8)(6 9))
-  (def (_ mn)
-    (if [nilp (car mn)] nil
-      (cons [dotmul m1 (map car mn)] [_ (map cdr mn)]) ;todo
+(def (pt-mat-mul p m) ;'(1 2 3) '((4 7)(5 8)(6 9))
+  (def (_ m)
+    (if [nilp (car m)] nil
+      (cons [dotmul p (map car m)] [_ (map cdr m)]) ;todo
   ) )
-  [_ mn]
+  [_ m]
 )
+(ali mat-1Muln pt-mat-mul)
 
-(def (mat-nMuln ma mb) ;mul-2-matrixes
+(def (mat-mat-mul ma mb) ;mul-2-matrixes
   (def (_ ma)
     (if (nilp ma) nil
-      (cons [mat-1Muln (car ma) mb] [_ (cdr ma)]) ;
+      (cons [pt-mat-mul (car ma) mb] [_ (cdr ma)]) ;
   ) )
   [_ ma]
 )
+(ali mat-nMuln mat-mat-mul)
 
-(def (mat-mul . mts) ;matrix-spot-mul matrixes ;what's the limit?
-  (fold-left mat-nMuln (car mts) (cdr mts))
+(def (matrix-mul . mts) ;matrix-spot-mul matrixes ;what's the limit?
+  (fold-left mat-mat-mul (car mts) (cdr mts))
 )
 
 ;AI
@@ -2654,8 +2704,8 @@
 
 ;vec: mk-vec n; vec-fill!; vec-set! v i x; 
 
-(alias vec-copy vector-copy)
 (alias mk-vec make-vector)
+(alias vec-copy vector-copy)
 (alias vec-len vector-length)
 (alias vec-set-fnum! vector-set-fixnum!)
 (alias vec-set! vector-set-fixnum!)
@@ -2672,19 +2722,19 @@
 
 (def (vec-nilp x) ;
   (if [vecp x]
-    (=0 (veclen x))
+    (=0 (vec-len x))
     Fal
 ) )
 (alias vnilp vec-nilp)
 
 ;(def num->lis (curry apply/reducing-num cons)) ;
-(def num->lis range)
+(def num->lis iota)
 
 (def vnil (vec))
 (def (vec-car v) (vec-ref v 0))
 (def (vecadr v) (vec-ref v 1))
 
-(def (vec-consp v) (and (vecp v) [>0(veclen v)]))
+(def (vec-consp v) (and (vecp v) [>0(vec-len v)]))
 
 (defn num->vec (n)   ;vec-flat ;@(lis->vec (range n))
   (let ([ve (mk-vec n)])
@@ -2694,12 +2744,12 @@
 ) )
 
 (def (ve-last ve)
-  (vec-ref ve [- (veclen ve)1])
+  (vec-ref ve [- (vec-len ve)1])
 )
 
 (defn vec-cons (x vy) ;* . xxv
   (if (vecp vy)
-    (let ([ve (mk-vec [+ 1 (veclen vy)])])
+    (let ([ve (mk-vec [+ 1 (vec-len vy)])])
       (vec-set! ve 0 x)
       (vec-copy! ve 1 vy)
       ve
@@ -2709,7 +2759,7 @@
 (def [ve-cons* . xxv]
   (letn ([vy (last xxv)][n (len xxv)][m (- n 1)])
     (if (vecp vy)
-      (let ([ve (mk-vec [+ m (veclen vy)])])
+      (let ([ve (mk-vec [+ m (vec-len vy)])])
         (vec-copy! ve 0 (lis->vec [ncdr xxv -1])) ;->lis flat
         (vec-copy! ve m vy)
         ve )
@@ -2719,7 +2769,7 @@
 
 (defn vec-conz (vx y)
   (if (vecp vx)
-    (letn ([n (veclen vx)][ve (mk-vec [+ 1 n])])
+    (letn ([n (vec-len vx)][ve (mk-vec [+ 1 n])])
       (vec-copy! ve 0 vx)
       (vec-set! ve n y)
       ve
@@ -2784,7 +2834,7 @@
 ) )
 
 (def (vec-rev! ve)
-  (letn ([n (veclen ve)] [m (- n 1)] [h (quot n 2)])
+  (letn ([n (vec-len ve)] [m (- n 1)] [h (quot n 2)])
     (for (i h)
       (vec-swap! ve i [- m i])
 ) ) )
@@ -2794,15 +2844,15 @@
     [(ve) (vec-copy ve)]
     [(des i) (vec-tail des i)]    
     [(des i src)
-      [vec-copy! des i src (veclen src)] ] ;
+      [vec-copy! des i src (vec-len src)] ] ;
     [(des i src n)
-      (letn ([dn (veclen des)][m (min n [- dn i])])
+      (letn ([dn (vec-len des)][m (min n [- dn i])])
         (for (j m)
           (vec-set! des (+ i j) (vec-ref src j)) ) ) ]
 ) )
 
 (def (vec-append . vz)
-  (letn ([n (len vz)][ns (map veclen vz)][ret (mk-vec [redu + ns])])
+  (letn ([n (len vz)][ns (map vec-len vz)][ret (mk-vec [redu + ns])])
     (for (i n)
       (vec-copy! ret (redu + [head ns i]) (xth vz i)) )
     ret
@@ -2971,13 +3021,15 @@
     (def fnam (ffi (sym->str 'api) args ret)) )
   ( [_ fnam rems ret api args]
     (defc fnam ret api args) )
+  ( [_ fnam rems ret api args flg]
+    (def fnam (ffi flg (sym->str 'api) args ret)) )
 )
 
 ;
 (load-lib "kernel32.dll") ;Beep
 (defc* GetCommandLineA () string get-command-line)
 (defc beep (freq dura) void* Beep (void* void*))
-(defc c-sleep (ms) void* Sleep (void*)) ;(defc c-sleep Sleep 1) ;(ms)
+(defc c-sleep (ms) unsigned Sleep (unsigned) __collect_safe) ;(defc c-sleep Sleep 1) ;(ms) ;__collect_safe "sleep"
 (alias sleep c-sleep)
 
 (load-lib "msvcrt.dll")
@@ -3140,6 +3192,23 @@
 
 ;to-test: (cps ...)
 
+(def (rec-chk n f x0 . xs0)
+  (def (_ x m)
+    (if (>= m n) x ;
+      [_ (redu f (cons x xs0)) (1+ m)] ;recurse
+  ) )
+  (_ x0 0)
+)
+(def (fix-chk n f . xs0) ; to help speed improve
+  (def (_ x m)
+    (if (>= m n) x ;
+      [_ (redu f xs0) (1+ m)] ;
+  ) )
+  (_ nil 0)
+)
+(ali chk fix-chk)
+;(chk 10 cdr '(1 2 3))
+
 ;
 
 ;num2lis num2abc abc2num
@@ -3268,3 +3337,8 @@
     ; map map.ori
     ;+   +.ori
 ) )
+
+#|
+```
+
+|#
