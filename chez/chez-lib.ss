@@ -1,5 +1,5 @@
 #|
-# chez-lib.ss v1.6 - written by Faiz
+# chez-lib.ss v1.6a - written by Faiz
 
   suffixes:
     @ bad / slow
@@ -319,18 +319,18 @@
     (define f
       (eval ;
         (foldr
-          [lam(a b)(append~ a (list b))]
-          `(lam() body ...)
-          [map (lam(x)`(lam(,x))) 'args] ;
+          (lam (a b) [append~ a (li b)])
+          `(lam () body ...)
+          (map [lam (x) `(lam (,x))] 'args) ;
 ) ) ) ) )
 (defsyn defn-snest ;(lam(a)(lam(b) body...))
   ( [_ f args body ...]
     (define f
       (eval
         (foldr
-          [lam(a b) (append a (list b))]
+          [lam (a b) (append a (list b))]
           `(bgn body ...)
-          (map [lam(x) `(lam (,x) )] 'args) ;
+          (map [lam (x) `(lam (,x) )] 'args) ;
 ) ) ) ) )
 ;lam-snest (x y z) (+ x y z)
 
@@ -547,21 +547,37 @@
     (cons '(x) [sy/list-the-front xs]) ;
 ) )
 
-(def (defa->vals/aux paras vals nths-defa-part nths-not-defa nths-defa-rest) ;
-  (def (_ paras vals n-head n-ndefa n-tail ret)
-    (if (nilp paras)  ret ;
+; (def (defa->vals/aux paras vals nths-defa-part nths-not-defa nths-defa-rest) ;
+  ; (def (_ paras vals n-head n-ndefa n-tail ret)
+    ; (if (nilp paras)  ret ;
+      ; (let ([ev-cadr (lam (xs) [ev(cadr xs)])])
+        ; (if (nilp vals)
+          ; [_ nil nil 0 0 0 [append~ (rev ret) (map ev-cadr paras)]] ;
+          ; (letn ([a (car paras)] [d (cdr paras)]) 
+            ; (if (cdr-nilp a)
+              ; (cons (car vals) [_ d (cdr vals) n-head (1- n-ndefa) n-tail ret]) ;
+              ; (if (<1 n-head)
+                ; [_ d vals 0 n-ndefa (1- n-tail) (cons(ev[cadr a])ret)] ;
+                ; (cons (car vals) [_ d (cdr vals) (1- n-head) n-ndefa n-tail ret]) ;
+  ; ) ) ) ) ) ) )
+  ; [_ paras vals nths-defa-part nths-not-defa nths-defa-rest nil]
+; )
+(def (defa->vals/aux paras vals numof-defa-vals numof-not-defa numof-defa-rest)
+  (def (_ paras vals n-head n-ndefa n-tail ret) ;
+    (if (nilp paras) (rev ret) ;
       (let ([ev-cadr (lam (xs) [ev(cadr xs)])])
         (if (nilp vals)
-          [_ nil nil 0 0 0 [append~ (rev ret) (map ev-cadr paras)]] ;
+          [append~ (rev ret) (map ev-cadr paras)] ;
           (letn ([a (car paras)] [d (cdr paras)]) 
-            (if (cdr-nilp a)
-              (cons (car vals) [_ d (cdr vals) n-head (1- n-ndefa) n-tail ret]) ;
+            (if (cdr-nilp a) ;not-defa
+              [_ d (cdr vals) n-head (1- n-ndefa) n-tail (cons (car vals) ret)] ;
               (if (<1 n-head)
-                [_ d vals 0 n-ndefa (1- n-tail) (cons(ev[cadr a])ret)] ;
-                (cons (car vals) [_ d (cdr vals) (1- n-head) n-ndefa n-tail ret]) ;
+                [_ d vals 0 n-ndefa (1- n-tail) (cons (ev[cadr a]) ret) ] ;
+                [_ d (cdr vals) (1- n-head) n-ndefa n-tail (cons (car vals) ret)] ;
   ) ) ) ) ) ) )
-  [_ paras vals nths-defa-part nths-not-defa nths-defa-rest nil]
+  [_ paras vals numof-defa-vals numof-not-defa numof-defa-rest nil]
 )
+;(defa->vals/aux% '((a)(b 3)(c)) '(2 4) 0 2 1) -> '(2 3 4)
 
 ;(call-with-values (lam()(values 'a 'b vc)) g)
 (defsyn def/defa ;(_ (g [a] [b 2] [c ]) (+ a b c)) ;test on fib0 found some issue
@@ -581,6 +597,7 @@
 ) ) ) ) ) ) )
 ;We may def func again with some defa paras, and test the func with just one variable para.
 ;(def/defa asd ([a 2] b [c *]) (c a b)) (asd 3) (asd 4 3) (asd 4 3 +)
+;(def/defa asd (a [b 3] c) (c a b)) (assert (asd 2 *) 6)
 ;(alias defa-def defa-def2)
 
 ; (defsyn def/defa ;(_ (g [a] b (c 3) (d 4) e) (+ a b c d)) ;lam/defa ;todo: test@, (d 4) e
@@ -706,7 +723,7 @@
 
 ;
 
-(def (compose% . gs) ;
+(def (compose . gs) ;@
   (def (_ ret gs)
     (if* ;[nilp gs] id ;nop x.id x.li
       [nilp (cdr gs)]
@@ -715,16 +732,6 @@
         (lam (x) (ret [(car gs) x]))
         (cdr gs)
   ) ) )
-  (_ id gs)
-)
-
-(def (compose . gs) ;@
-  (def (_ ret gs)
-    (if (nilp gs) ret
-      [_
-        (lam(x) [ret ((car gs) x)])
-        (cdr gs) ]
-  ) )
   (_ id gs)
 )
 
@@ -2149,17 +2156,19 @@
 )
 (alias permu permutation)
 
-(def_ (combinations items k)
-  (cond
-    ((eq k 0) (list '())) ;
-    ((eq k 1) (map list items))
-    ((>= k (len items)) (list items))
-    (else
+(def (combinations xs n)
+  (def (_ xs n)
+    (if~
+      [eq n 0] nil
+      [eq n 1] (map list xs)
+      [>= n (len xs)] (li xs) ;
       (append~ ;
-        [_ (rest items) k]
-        (map (curry~ cons (car items)) ;
-             [_ (rest items) (1- k)]
-) ) ) ) )
+        [_ (cdr xs) n]
+        (map [curry~ cons (car xs)] ;
+          [_ (cdr xs) (1- n)]
+  ) ) ) )
+  (_ xs n)
+)
 
 (def (permu-n xs n)
   (redu~ append~
@@ -2533,6 +2542,7 @@
 )
 
 (alias try-fail? condition?)
+(ali bad-try? condition?)
 (def (full-eval x) ;
   (def (_ x)
     (let ([ret (try(ev x))])
@@ -2787,7 +2797,7 @@
 ) )
 
 (def (ve-last ve)
-  (vec-ref ve [- (vec-len ve)1])
+  (vec-ref ve [1- (vec-len ve)])
 )
 
 (defn vec-cons (x vy) ;* . xxv
@@ -3319,7 +3329,7 @@
 
 ;to-test: (cps ...)
 
-(def (rec-chk n f x0 . xs0)
+(def (rec-chk n f x0 . xs0) ; ;(_ 20 + 0 1 2)
   (def (_ x m)
     (if (>= m n) x ;
       [_ (redu f (cons x xs0)) (1+ m)] ;recurse
