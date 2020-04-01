@@ -1,5 +1,5 @@
 #|
-# chez-lib.ss v1.6a - written by Faiz
+# chez-lib.ss v1.6b - written by Faiz
 
   suffixes:
     @ bad / slow
@@ -449,7 +449,8 @@
 
 (def (id x) x)
 (alias identity id)
-(ali li list)
+(alias li list)
+(ali str->list string->list)
 
 (def car.ori car)
 (def cdr.ori cdr)
@@ -562,7 +563,7 @@
   ; ) ) ) ) ) ) )
   ; [_ paras vals nths-defa-part nths-not-defa nths-defa-rest nil]
 ; )
-(def (defa->vals/aux paras vals numof-defa-vals numof-not-defa numof-defa-rest)
+(def (defa->vals/aux paras vals numof-defa-vals numof-not-defa numof-defa-rest) ;@
   (def (_ paras vals n-head n-ndefa n-tail ret) ;
     (if (nilp paras) (rev ret) ;
       (let ([ev-cadr (lam (xs) [ev(cadr xs)])])
@@ -580,7 +581,7 @@
 ;(defa->vals/aux% '((a)(b 3)(c)) '(2 4) 0 2 1) -> '(2 3 4)
 
 ;(call-with-values (lam()(values 'a 'b vc)) g)
-(defsyn def/defa ;(_ (g [a] [b 2] [c ]) (+ a b c)) ;test on fib0 found some issue
+(defsyn def/defa ;@ (_ (g [a] [b 2] [c ]) (+ a b c)) ;test on fib0 found some issue
   ( [_ (g . paras) body ...] (def/defa g paras body ...)) 
   ( [_ g paras% body ...]
     (define (g . args) ;
@@ -1080,7 +1081,7 @@
   [_ xs nil]
 )
 
-(def/defa (remov-1?/g x xs [g eql])
+(def/defa (remov-1?/g x xs [g eql]) ;
 ;(def (remov-1?/g x xs g) ;result / #f
   (call/cc (lam [k]
       (def (_ xs)
@@ -1346,7 +1347,7 @@
 ) ) )
 (alias ty type-main)
 
-(def [bool x] (not(not x))) ;nil? 0? ;does it conflit with bool type in ffi ?
+(def [bool x] (if x Tru Fal)) ;nil? 0? ;does it conflit with bool type in ffi ?
 
 (def (bool->string b) (?: (fal? b) "#f" "#t"))
 
@@ -2927,7 +2928,7 @@
 ) ) )
 
 
-(def/defa (qsort xs [f >]) (sort f xs))
+(def/defa (qsort xs [f >]) (sort f xs)) ;
 
 (define (merge-sort ls lt?) ;2x slower than sort
   (define merge~
@@ -3345,6 +3346,37 @@
 )
 (ali chk fix-chk)
 ;(chk 10 cdr '(1 2 3))
+
+(def (with-head? xs ys ) ;(_ '(1 2 3 4) '(1 2/3)) ;-> Y/N ;def/defa will make it slow
+  (def (_ xs ys)
+    (if (nilp ys) Tru ;xs?
+      (if (nilp xs) Fal
+        (if [eql (car xs) (car ys)]
+          [_ (cdr xs) (cdr ys)]
+          Fal
+  ) ) ) )
+  (_ xs ys)
+)
+(def (with? xs ys ) ;(_ '(1 2 3 4) '(2 3/4)) ;-> Y/N ;with/contain
+  (def (_ xs)
+    (if (nilp xs) Fal
+      (if (with-head? xs ys ) Tru ;xs?
+        [_ (cdr xs)] ;len?
+  ) ) )
+  (if (nilp ys) Fal
+    (_ xs)
+) )
+(def (sym-with? s x)
+  (redu with? [map (compose str->list sym->str) (li s x)]) ;rcurry  eq
+)
+
+(def (syms) (environment-symbols (interaction-environment)))
+
+(defm (api? x) (bool [mem? 'x (syms)]))
+
+(def (api-with x) ;(_ 'string) ;-> '(xx-string-xx string-xx blar blar)
+  (filter (rcurry sym-with? x) (syms))
+)
 
 ;
 
