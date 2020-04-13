@@ -1,2 +1,8 @@
 *.scm
 *.ign
+
+*.txt
+tmp
+
+*.rar
+*.zip

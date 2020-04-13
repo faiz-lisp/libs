@@ -1,2 +1,2 @@
-# mylib
-my pub libs
+# Libs
+My public libs

@@ -1,5 +1,5 @@
 #|
-# chez-lib.ss v1.7a - written by Faiz
+# chez-lib.ss v1.7b - written by Faiz
 
   suffixes:
     @ bad / slow
@@ -38,6 +38,7 @@
     eq =, eql
 
   todo:
+    to compatibale with linux
     include
     end->car
     control[include convert]: strings, files, ...

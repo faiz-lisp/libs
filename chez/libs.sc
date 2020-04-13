@@ -234,50 +234,50 @@ todo:
   . how to do when re-def/defsyt/setq/alias ?
 |#
 
-(load-relatived (symbol->string 'chez-libs/alias.ss))
-(load-relatived (symbol->string 'chez-libs/syntax.ss)) ;
-(load-relatived (symbol->string 'chez-libs/define.ss))
-(load-relatived (symbol->string 'chez-libs/control.ss)) ;
-(load-relatived (symbol->string 'chez-libs/nested.ss)) ;
-(load-relatived (symbol->string 'chez-libs/global.ss))   ;
-(load-relatived (symbol->string 'chez-libs/set!.ss)) 
-(load-relatived (symbol->string 'chez-libs/core.ss)) 
-(load-relatived (symbol->string 'chez-libs/faster.ss))   ;
-(load-relatived (symbol->string 'chez-libs/shortcut.ss)) ;
+(load-relatived (symbol->string 'libs/alias.ss))
+(load-relatived (symbol->string 'libs/syntax.ss)) ;
+(load-relatived (symbol->string 'libs/define.ss))
+(load-relatived (symbol->string 'libs/control.ss)) ;
+(load-relatived (symbol->string 'libs/nested.ss)) ;
+(load-relatived (symbol->string 'libs/global.ss))   ;
+(load-relatived (symbol->string 'libs/set!.ss)) 
+(load-relatived (symbol->string 'libs/core.ss)) 
+(load-relatived (symbol->string 'libs/faster.ss))   ;
+(load-relatived (symbol->string 'libs/shortcut.ss)) ;
 
-(load-relatived (symbol->string 'chez-libs/extend.ss))   ;
-(load-relatived (symbol->string 'chez-libs/syt-ext.ss))  ;
-(load-relatived (symbol->string 'chez-libs/trial.ss))
-(load-relatived (symbol->string 'chez-libs/vector.ss))   ;
-(load-relatived (symbol->string 'chez-libs/list.ss))     ;
-(load-relatived (symbol->string 'chez-libs/string.ss))   ;
-(load-relatived (symbol->string 'chez-libs/number.ss))   ;
-(load-relatived (symbol->string 'chez-libs/function.ss)) ;
-(load-relatived (symbol->string 'chez-libs/math.ss)) ;
-(load-relatived (symbol->string 'chez-libs/utility.ss)) ;
-(load-relatived (symbol->string 'chez-libs/length.ss)) ;
-(load-relatived (symbol->string 'chez-libs/algo.ss)) ;
-(load-relatived (symbol->string 'chez-libs/nth.ss)) 
-(load-relatived (symbol->string 'chez-libs/type.ss)) ;
+(load-relatived (symbol->string 'libs/extend.ss))   ;
+(load-relatived (symbol->string 'libs/syt-ext.ss))  ;
+(load-relatived (symbol->string 'libs/trial.ss))
+(load-relatived (symbol->string 'libs/vector.ss))   ;
+(load-relatived (symbol->string 'libs/list.ss))     ;
+(load-relatived (symbol->string 'libs/string.ss))   ;
+(load-relatived (symbol->string 'libs/number.ss))   ;
+(load-relatived (symbol->string 'libs/function.ss)) ;
+(load-relatived (symbol->string 'libs/math.ss)) ;
+(load-relatived (symbol->string 'libs/utility.ss)) ;
+(load-relatived (symbol->string 'libs/length.ss)) ;
+(load-relatived (symbol->string 'libs/algo.ss)) ;
+(load-relatived (symbol->string 'libs/nth.ss)) 
+(load-relatived (symbol->string 'libs/type.ss)) ;
 
-(load-relatived (symbol->string 'chez-libs/cl-dsl.ss)) ;
-(load-relatived (symbol->string 'chez-libs/c.ss)) ;
-(load-relatived (symbol->string 'chez-libs/onlisp.ss)) ;
-(load-relatived (symbol->string 'chez-libs/matrix.ss)) ;
-(load-relatived (symbol->string 'chez-libs/test.ss))   ;
-(load-relatived (symbol->string 'chez-libs/ai.ss))     ;
-(load-relatived (symbol->string 'chez-libs/file.ss))   ;
-(load-relatived (symbol->string 'chez-libs/theory.ss)) ;
-(load-relatived (symbol->string 'chez-libs/church.ss)) ;
-(load-relatived (symbol->string 'chez-libs/sort.ss))   ;
-(load-relatived (symbol->string 'chez-libs/debug.ss))  ;
+(load-relatived (symbol->string 'libs/cl-dsl.ss)) ;
+(load-relatived (symbol->string 'libs/c.ss)) ;
+(load-relatived (symbol->string 'libs/onlisp.ss)) ;
+(load-relatived (symbol->string 'libs/matrix.ss)) ;
+(load-relatived (symbol->string 'libs/test.ss))   ;
+(load-relatived (symbol->string 'libs/ai.ss))     ;
+(load-relatived (symbol->string 'libs/file.ss))   ;
+(load-relatived (symbol->string 'libs/theory.ss)) ;
+(load-relatived (symbol->string 'libs/church.ss)) ;
+(load-relatived (symbol->string 'libs/sort.ss))   ;
+(load-relatived (symbol->string 'libs/debug.ss))  ;
 
-(load-relatived (symbol->string 'chez-libs/ffi.ss))    ;
-(load-relatived (symbol->string 'chez-libs/tool.ss))   ;
+(load-relatived (symbol->string 'libs/ffi.ss))    ;
+(load-relatived (symbol->string 'libs/tool.ss))   ;
 
-(load-relatived (symbol->string 'chez-libs/pmatch.ss)) ;
-(load-relatived (symbol->string 'chez-libs/cps.ss))
+(load-relatived (symbol->string 'libs/pmatch.ss)) ;
+(load-relatived (symbol->string 'libs/cps.ss))
 
-(load-relatived (symbol->string 'chez-libs/prolog.ss)) ;
+(load-relatived (symbol->string 'libs/prolog.ss)) ;
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
