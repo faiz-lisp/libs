@@ -1,5 +1,5 @@
 #|
-# chez-lib.ss v1.6e - written by Faiz
+# chez-lib.ss v1.7 - written by Faiz
 
   suffixes:
     @ bad / slow
@@ -463,7 +463,7 @@
   (def (_ xs)
     (if (nilp xs) *v
       (bgn
-        (display (car xs))
+        (display (car xs)) ;write/pretty-print/display/?
         [_ (cdr xs)]
   ) ) )
   ;(if *will-disp*
@@ -586,15 +586,15 @@
 ;(defa->vals/aux% '((a)(b 3)(c)) '(2 4) 0 2 1) -> '(2 3 4)
 
 ;(call-with-values (lam()(values 'a 'b vc)) g) ;
-(defsyn def/defa ;@ (_ (g [a] [b 2] [c ]) (+ a b c)) ;test on fib0 found some issue
-  ( [_ (g . paras) body ...] (def/defa g paras body ...))
+(defsyn def/defa@ ;@ (_ (g [a] [b 2] [c ]) (+ a b c)) ;test on fib0 found some issue
+  ( [_ (g . paras) body ...] (def/defa@ g paras body ...))
   ( [_ g paras% body ...]
-    (define (g . args) ;
+    (define (g . args) ; case-lam is good
       (let ([paras (list-elements 'paras%)])
-        (define f% [ev `(lam ,(map car paras) body ...)]) ;
+        (define f% [ev `(lam ,(map car paras) body ...)]) ; eval is not good
         (letn ( [paras-ln (len paras)]
                 [num-not-defa (num-not-defa-vals paras)]
-                [vals-ln (len args)] ;args for calling
+                [vals-ln (len args)] ;args for calling ; runtime args
                 [n-head (- vals-ln num-not-defa)]
                 [n-tail (- paras-ln vals-ln)] ) ;(echol n-head num-not-defa n-tail)
           (redu f%
@@ -611,7 +611,22 @@
   ; ( [_ g paras body ...]
     ; (defa-def g paras body ...)
 ; ) )
-(alias def/values def/defa)
+
+(defsyn def/defa%
+  ([_ f (p ... q) (V ... Q) ret ...]
+    (def/defa% f (p ...) (V ...)
+      ret ... ([p ...] (f p ... Q))
+  ) )
+  ([_ f (p ...) () ret ...]
+    (case-lam ret ...) ;
+) )
+(defsyn def/defa
+  ([_ f (p ...) (V ...) body ...] ; () []
+    (def f
+      [def/defa% f (p ...) (V ...) ;
+        ([p ...] body ...) ]
+) ) )
+(ali def/values def/defa)
 
 ;common
 
@@ -1071,7 +1086,7 @@
 ) )
 (ali find-x-meet find-x-match)
 
-(def/defa (assoc-g x ys [g id])
+(def/defa assoc-g (x ys g) (id)
 ;(def (assoc-g x ys g)
   (let ([= (eq/eql x)])
     (def (_ ys)
@@ -1260,12 +1275,14 @@
 (defsyn set-nth!
   ([_ xs n y] (set-xth! xs (1- n) y))
 )
+
 (defsyt insert-xth!
   ([_ xs i y]
     (letn([pre (head xs i)]
           [pos (tail xs i)])
       (setq xs (append! pre (cons y pos)))
 ) ) )
+
 (defsyn swap-xths!
   ( [_ xs i j]
     (let ([t (nth xs i)])
@@ -1289,7 +1306,7 @@
   (syn-case stx ()
     ( [_ xs]
       [identifier? #'xs]
-      #'[setq xs (cdr xs)] )
+      #'(setq xs (cdr xs)) )
     ( [_ xs]
       #'(car xs) )
 ) )
@@ -1298,12 +1315,12 @@
   (syn-case stx () ;
     ([_ args ... x]
       (identifier? #'x) ;
-      #'[setq x (cons* args ... x)] ) ;
+      #'(setq x (cons* args ... x)) ) ;
     ([_ . args]
       #'(cons* . args)
 ) ) )
 
-; to make return similar to bgn/values?
+; to make return similar to bgn/values, with multiple input values
 
 (def-syn (rpush stx)
   (syn-case stx ()
@@ -1312,8 +1329,7 @@
       #'(bgn
         (if [nilp xs]
           (setq xs (li args ...))
-          (set-cdr! (last-pair xs) (li args ...)) ;
-        )
+          (set-cdr! (last-pair xs) (li args ...)) ) ;
         (return xs)
     ) ) ;
     ([_ args ... xs]
@@ -2066,13 +2082,13 @@
 
 (alias quot quotient)
 
-(def n-digits
+(def n-digits ;integer-length 128 2
   (case-lam
     ( [num m] ;@ not for float
       (def (_ num n)
-        (let ([quo (quot num m)]) ;1 2 4 2 1
-          (if [< quo 1] n
-            [_ quo (1+ n)]
+        (let ([quot (quotient num m)]) ;@ 1 2 4 2 1
+          (if [< quot 1] n
+            [_ quot (1+ n)]
       ) ) )
       (_ num 1) )
     ([num] (n-digits num 10))
@@ -2530,7 +2546,7 @@
   (* x (sigmoid x))
 )
 
-(def/defa (nonlin x (deriv Fal)) ;
+(def/defa nonlin (x deriv) [Fal] ;
   (if (eql deriv Tru)
     (* x [- 1 x])
     (sigmoid x)
@@ -2595,7 +2611,7 @@
 (def (quine-f g) `(,g ',g)) ;[_ '_] `,_ ' ;(quine 'quine) (ev(quine 'quine)) (eql (quine 'quine) (ev(quine 'quine)))
 (defm (quine g) `(,'g ,'g))
 
-(def/defa (ev-n x [m 1])
+(def/defa ev-n (x m) [1]
   (def (_ x n)
     (if~ (> n m) x
       ; (let ([ret (ev x)])
@@ -3253,20 +3269,20 @@
 (defsyn cost
   ( [_ g]
     (let ([t 0] [res nil])
-      (echol ":" 'g)
+      (echol (fmt ": ~s" 'g))
       (set! t (clock))
       (set! res g)
-      (setq t (inexa(/ (-(clock)t) CLOCKS_PER_SEC)))
+      (set! t (inexa(/ (-(clock)t) CLOCKS_PER_SEC)))
       (echol ": elapse =" t "s")
       (li res t)
 ) ) )
 (defsyn elapse ;just elapse but result
   ( [_ g]
     (let ([t 0])
-      (echol ":" 'g)
+      (echol (fmt ": ~s" 'g))
       (set! t (clock))
       g
-      (setq t (inexa(/ (-(clock)t) CLOCKS_PER_SEC)))
+      (set! t (inexa(/ (-(clock)t) CLOCKS_PER_SEC)))
       (echol ": elapse =" t "s")
       t
 ) ) )
@@ -3276,15 +3292,8 @@
   (if (str/pair/vec? x) eql eq)
 )
 
-(defn mem?/g (x xs g) ;
-  (def (_ xs)
-    (if (nilp xs) *f
-      (if (g (car xs) x) *t ;
-        [_ (cdr xs)]
-  ) ) )
-  (_ xs)
-)
-(alias mem? member)
+(ali mem? member)
+(def (mem?% x xs) (bool(mem? x xs)))
 
 (defn remov-same (xs)
   (def (_ xs ts)
