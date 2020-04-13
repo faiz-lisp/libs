@@ -1,5 +1,5 @@
 #|
-# chez-lib.ss v1.7 - written by Faiz
+# chez-lib.ss v1.7a - written by Faiz
 
   suffixes:
     @ bad / slow
@@ -626,6 +626,7 @@
       [def/defa% f (p ...) (V ...) ;
         ([p ...] body ...) ]
 ) ) )
+(ali defn/defa def/defa)
 (ali def/values def/defa)
 
 ;common

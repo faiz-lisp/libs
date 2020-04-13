@@ -1,2 +1,2 @@
 @echo off
-start chez chez-lib.ss
+start chez lib.sc
