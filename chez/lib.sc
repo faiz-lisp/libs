@@ -1,5 +1,5 @@
 #|
-# chez-lib.ss v1.7z - written by Faiz
+# chez-lib.ss v1.7zz - written by Faiz
 
   suffixes:
     @ bad / slow
@@ -651,7 +651,7 @@
       #'(def/va%4 g ori-pairs ([a A] ...) (A0 ...) ori-tmp-cnt [At Bt ...] (ret ...) [z tmp ...] (z rest ...))
     )                                  
     ([_ g ori-pairs ([a A] ... [z Z]) (A0 ...) ori-tmp-cnt [At Bt ...] (ret ...) [tmp ...] (rest ...)]
-      #'(def/va%4 g ori-pairs ([a A] ...) (A0 ...) ori-tmp-cnt [   Bt ...] (ret ...) [tmp ...] (Z rest ...)) ;;
+      #'(def/va%4 g ori-pairs ([a A] ...) (A0 ...) ori-tmp-cnt [   Bt ...] (ret ...) [tmp ...] (Z rest ...)) ;
     )
     ([_ g ori-pairs ([a A] ... [z Z]) (A0 ...) ori-tmp-cnt [         ] (ret ...) [tmp ...] (rest ...)] ;
       #'(def/va%4 g ori-pairs ([a A] ...) (A0 ...) ori-tmp-cnt [         ] (ret ...) [z tmp ...] (z rest ...))
@@ -662,10 +662,9 @@
     ([_ g ori-pairs (               ) (A0 B0 ...) (ori-tmp-cnt ...) [] (ret ...) [tmp ...] (rest ...)]
       #'(def/va%4 g ori-pairs ori-pairs  (   B0 ...) (A0 ori-tmp-cnt ...) (A0 ori-tmp-cnt ...) (ret ... ([tmp ...](g rest ...))) [] [])
     )
-    ([_ g ori-pairs para-pairs        [         ] ori-tmp-cnt       []       (ret ...) [tmp ...] (rest ...)] ;?      
+    ([_ g ori-pairs para-pairs        [         ] ori-tmp-cnt       []       (ret ...) [tmp ...] (rest ...)] ;
       #'(def g (case-lam ret ... ([tmp ...](g rest ...)))) ;
-    )
-) )
+) ) )
 ;ori-para-pair cur-para-pair, main-defa-cnt temp-defa-cnt0 temp-defa-cnt 
 
 #|
@@ -679,13 +678,10 @@
   ([_ g ori [(a b) ...] (defas ...) body ...]
     (def/va%4 g [(a b) ...] [(a b) ...]
       (defas ...)
-      []
-      []
+      [] []
       [([a ...] body ...)]
-      []
-      []
-    )
-) )
+      [] []
+) ) )
 
 #|
 (try2 asd ((a 1) s (d 3) f) ((a 1) s (d 3) f)
@@ -700,10 +696,10 @@
     ([_ g ori (x y ...) (ret ...) [defas ...] body ...]
       #'(def/va%2 g ori (y ...) (ret ... x) [defas ...] body ...) )
     ([_ g ori () (ret ...) [defas ...] body ...]
-      ;#'`(ret ...)
       #'(def/va%3 g ori (ret ...) [defas ...] body ...)
 ) ) )
 
+;(def/va (asd [a 1] s [d 3] f) (li a s d f)) ;=> (asd 'A 'S 'F)
 (defsyn def/va
   ([_ (g p ...) body ...]
     (def/va%2 g (p ...) (p ...) () () body ...)
