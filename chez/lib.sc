@@ -1,5 +1,5 @@
 #|
-# chez-lib.ss v1.7b - written by Faiz
+# chez-lib.ss v1.7z - written by Faiz
 
   suffixes:
     @ bad / slow
@@ -120,7 +120,6 @@
 
   to-optimize:
     1/2 -> 0.5
-    def/defa -> case-lam
     def-syn
     def f g -> alias f g
     nilp (cdr xs)
@@ -603,32 +602,117 @@
               n-head num-not-defa n-tail
 ) ) ) ) ) ) )
 ;We may def func again with some defa paras, and test the func with just one variable para.
-;(def/defa asd ([a 2] b [c *]) (c a b)) (asd 3) (asd 4 3) (asd 4 3 +)
-;(def/defa asd (a [b 3] c) (c a b)) (assert (asd 2 *) 6)
-;(alias defa-def defa-def2)
 
-; (defsyn def/defa ;(_ (g [a] b (c 3) (d 4) e) (+ a b c d)) ;lam/defa ;todo: test@, (d 4) e
-  ; ( [_ (g . paras) body ...] (def/defa g paras body ...))
-  ; ( [_ g paras body ...]
-    ; (defa-def g paras body ...)
-; ) )
 
-(defsyn def/defa%
+(defsyn defn/values%
   ([_ f (p ... q) (V ... Q) ret ...]
-    (def/defa% f (p ...) (V ...)
+    (defn/values% f (p ...) (V ...)
       ret ... ([p ...] (f p ... Q))
   ) )
   ([_ f (p ...) () ret ...]
     (case-lam ret ...) ;
 ) )
-(defsyn def/defa
-  ([_ f (p ...) (V ...) body ...] ; () []
+(defsyn defn/values
+  ([_ f (p ...) [V ...] body ...]
     (def f
-      [def/defa% f (p ...) (V ...) ;
+      [defn/values% f (p ...) [V ...] ;
         ([p ...] body ...) ]
 ) ) )
-(ali defn/defa def/defa)
-(ali def/values def/defa)
+(defsyn def/values
+  ([_ (f p ...) [V ...] body ...]
+    (def f
+      [defn/values% f (p ...) [V ...] ;
+        ([p ...] body ...) ]
+) ) )
+(alias defn/defa defn/values)
+;(ali def/defa def/values) ;?
+
+;(ali def/va  def/values)
+;(ali defn/va defn/values)
+;(ali def/defa defn/values) ;To fix def/defa
+;(defn/va asd (a b c d) [3 4] (list a b c d)) ;(asd 1 2 5) -> '(1 2 5 4)
+;(def/va (asd a) [] (list a)) ;(asd 2) -> '(2)
+
+
+#|
+(def/va%4 asd
+  ((a 1) (s s) (d 3) (f f))
+  ((a 1) (s s) (d 3) (f f))
+  (f s)
+  () ()
+  (((a s d f) (li a s d f)))
+  () () )
+|#
+(def-syn (def/va%4 stx)
+  (syn-case stx ()
+    ;_   Ori-para-pairs para-pairs, main-cnt=(A D), Ori-tmp-cnt=() tmp-cnt=(), ret tmp=[] rest=[]
+    ([_ g ori-pairs ([a A] ... [z Z]) (A0 ...) ori-tmp-cnt [At Bt ...] (ret ...) [tmp ...] (rest ...)]
+      (identifier? #'Z)                
+      #'(def/va%4 g ori-pairs ([a A] ...) (A0 ...) ori-tmp-cnt [At Bt ...] (ret ...) [z tmp ...] (z rest ...))
+    )                                  
+    ([_ g ori-pairs ([a A] ... [z Z]) (A0 ...) ori-tmp-cnt [At Bt ...] (ret ...) [tmp ...] (rest ...)]
+      #'(def/va%4 g ori-pairs ([a A] ...) (A0 ...) ori-tmp-cnt [   Bt ...] (ret ...) [tmp ...] (Z rest ...)) ;;
+    )
+    ([_ g ori-pairs ([a A] ... [z Z]) (A0 ...) ori-tmp-cnt [         ] (ret ...) [tmp ...] (rest ...)] ;
+      #'(def/va%4 g ori-pairs ([a A] ...) (A0 ...) ori-tmp-cnt [         ] (ret ...) [z tmp ...] (z rest ...))
+    )    
+    ([_ g ori-pairs (               ) (A0 B0 ...) (   ) [ ] (ret ...) [tmp ...] (rest ...)]
+      #'(def/va%4 g ori-pairs ori-pairs  (   B0 ...) (A0) (A0) (ret ...) [] [])
+    )
+    ([_ g ori-pairs (               ) (A0 B0 ...) (ori-tmp-cnt ...) [] (ret ...) [tmp ...] (rest ...)]
+      #'(def/va%4 g ori-pairs ori-pairs  (   B0 ...) (A0 ori-tmp-cnt ...) (A0 ori-tmp-cnt ...) (ret ... ([tmp ...](g rest ...))) [] [])
+    )
+    ([_ g ori-pairs para-pairs        [         ] ori-tmp-cnt       []       (ret ...) [tmp ...] (rest ...)] ;?      
+      #'(def g (case-lam ret ... ([tmp ...](g rest ...)))) ;
+    )
+) )
+;ori-para-pair cur-para-pair, main-defa-cnt temp-defa-cnt0 temp-defa-cnt 
+
+#|
+(try3
+  asd
+  ((a 1) s (d 3) f)
+  ((a 1) (s s) (d 3) (f f))
+  (li a s d f))
+|#
+(defsyn def/va%3
+  ([_ g ori [(a b) ...] (defas ...) body ...]
+    (def/va%4 g [(a b) ...] [(a b) ...]
+      (defas ...)
+      []
+      []
+      [([a ...] body ...)]
+      []
+      []
+    )
+) )
+
+#|
+(try2 asd ((a 1) s (d 3) f) ((a 1) s (d 3) f)
+  () ()
+  (li a s d f))
+|#
+(def-syn (def/va%2 stx)
+  (syn-case stx ()
+    ([_ g ori (x y ...) (ret ...) [defas ...] body ...]
+      (identifier? #'x)
+      #'(def/va%2 g ori (y ...) (ret ... [x x]) [x defas ...] body ...) ) ;
+    ([_ g ori (x y ...) (ret ...) [defas ...] body ...]
+      #'(def/va%2 g ori (y ...) (ret ... x) [defas ...] body ...) )
+    ([_ g ori () (ret ...) [defas ...] body ...]
+      ;#'`(ret ...)
+      #'(def/va%3 g ori (ret ...) [defas ...] body ...)
+) ) )
+
+(defsyn def/va
+  ([_ (g p ...) body ...]
+    (def/va%2 g (p ...) (p ...) () () body ...)
+) )
+(defsyn defn/va
+  ([_ g (p ...) body ...]
+    (def/va%2 g (p ...) (p ...) () () body ...)
+) )
+(ali def/defa def/va)
 
 ;common
 
@@ -1088,7 +1172,7 @@
 ) )
 (ali find-x-meet find-x-match)
 
-(def/defa assoc-g (x ys g) (id)
+(defn/defa assoc-g (x ys g) [id]
 ;(def (assoc-g x ys g)
   (let ([= (eq/eql x)])
     (def (_ ys)
@@ -2548,7 +2632,7 @@
   (* x (sigmoid x))
 )
 
-(def/defa nonlin (x deriv) [Fal] ;
+(defn/defa nonlin (x deriv) [Fal] ;
   (if (eql deriv Tru)
     (* x [- 1 x])
     (sigmoid x)
@@ -2613,7 +2697,7 @@
 (def (quine-f g) `(,g ',g)) ;[_ '_] `,_ ' ;(quine 'quine) (ev(quine 'quine)) (eql (quine 'quine) (ev(quine 'quine)))
 (defm (quine g) `(,'g ,'g))
 
-(def/defa ev-n (x m) [1]
+(defn/defa ev-n (x m) [1]
   (def (_ x n)
     (if~ (> n m) x
       ; (let ([ret (ev x)])
