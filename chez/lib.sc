@@ -1,5 +1,5 @@
 #|
-# chez-lib.ss v1.7zz - written by Faiz
+# chez-lib.ss v1.7Z Beta - written by Faiz
 
   suffixes:
     @ bad / slow
@@ -643,15 +643,16 @@
   (((a s d f) (li a s d f)))
   () () )
 |#
-(def-syn (def/va%4 stx)
+(def-syn (def/va%4 stx) ;
   (syn-case stx ()
-    ;_   Ori-para-pairs para-pairs, main-cnt=(A D), Ori-tmp-cnt=() tmp-cnt=(), ret tmp=[] rest=[]
-    ([_ g ori-pairs ([a A] ... [z Z]) (A0 ...) ori-tmp-cnt [At Bt ...] (ret ...) [tmp ...] (rest ...)]
+    ;_ g, Ori-pairs para-pairs; main-cnt=(A D), Ori-tmp-cnt=() tmp-cnt=(); Ret, lamPara=[] bodyPara=[]
+    ([_       g ori-pairs ([a A] ... [z Z]) main-cnt ori-tmp-cnt [C1 C2 ...] ret [  lamPara ...] (  bodyPara ...)]
       (identifier? #'Z)                
-      #'(def/va%4 g ori-pairs ([a A] ...) (A0 ...) ori-tmp-cnt [At Bt ...] (ret ...) [z tmp ...] (z rest ...))
-    )                                  
-    ([_ g ori-pairs ([a A] ... [z Z]) (A0 ...) ori-tmp-cnt [At Bt ...] (ret ...) [tmp ...] (rest ...)]
-      #'(def/va%4 g ori-pairs ([a A] ...) (A0 ...) ori-tmp-cnt [   Bt ...] (ret ...) [tmp ...] (Z rest ...)) ;
+      #'(def/va%4 g ori-pairs ([a A] ...  ) main-cnt ori-tmp-cnt [C1 C2 ...] ret [z lamPara ...] (z bodyPara ...))
+    )                                                                      
+    ([_       g ori-pairs ([a A] ... [z Z]) main-cnt ori-tmp-cnt [C1 C2 ...] ret [  lamPara ...] (  bodyPara ...)]
+                                                                           
+      #'(def/va%4 g ori-pairs ([a A] ...  ) main-cnt ori-tmp-cnt [   C2 ...] ret [  lamPara ...] (Z bodyPara ...))
     )
     ([_ g ori-pairs ([a A] ... [z Z]) (A0 ...) ori-tmp-cnt [         ] (ret ...) [tmp ...] (rest ...)] ;
       #'(def/va%4 g ori-pairs ([a A] ...) (A0 ...) ori-tmp-cnt [         ] (ret ...) [z tmp ...] (z rest ...))
@@ -665,7 +666,7 @@
     ([_ g ori-pairs para-pairs        [         ] ori-tmp-cnt       []       (ret ...) [tmp ...] (rest ...)] ;
       #'(def g (case-lam ret ... ([tmp ...](g rest ...)))) ;
 ) ) )
-;ori-para-pair cur-para-pair, main-defa-cnt temp-defa-cnt0 temp-defa-cnt 
+;_ g, Ori-pairs para-pairs; main-cnt=(A D), Ori-tmp-cnt tmp-cnt=(); Ret, lamPara=[] bodyPara=[]
 
 #|
 (try3
@@ -700,6 +701,7 @@
 ) ) )
 
 ;(def/va (asd [a 1] s [d 3] f) (li a s d f)) ;=> (asd 'A 'S 'F)
+;To test: (def/va (asd [a 1] [b 2] [c 3]) (li a b c)) ;(asd)
 (defsyn def/va
   ([_ (g p ...) body ...]
     (def/va%2 g (p ...) (p ...) () () body ...)
@@ -1149,6 +1151,19 @@
 
 (def cdr-nilp [lam (x) (nilp(cdr x))])
 
+; [duplicates '(123 321 123 321 321 1 2 3)] -> '(123 321 321 ...) -> remov-same
+(def (duplicates xs)
+  (def (_ xs sml ret)
+    (if (nilp xs) ret
+      (let ([a (car xs)] [d (cdr xs)])
+        (if (mem? a sml)
+          [_ d sml (cons a ret)]
+          [_ d (cons a sml) ret]
+  ) ) ) )
+  ;[remov-same
+    (_ xs nil nil)
+  ;]
+)
 
 (def find-x-match
   (case-lam
@@ -3098,9 +3113,9 @@
 (define (merge-sort ls lt?) ;2x slower than sort
   (define merge~
     (lambda (ls1 ls2)
-      (if (null? ls1)
+      (if (nilp ls1)
           ls2
-          (if (null? ls2)
+          (if (nilp ls2)
               ls1
               (if [lt? (car ls1) (car ls2)]
                   (cons (car ls1) [merge~ (cdr ls1) ls2]) ;
