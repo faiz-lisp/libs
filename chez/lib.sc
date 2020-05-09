@@ -1,5 +1,5 @@
 #|
-# chez-lib.ss v1.7Z Beta - written by Faiz
+# chez-lib.ss v1.8 - written by Faiz
 
   suffixes:
     @ bad / slow
@@ -37,6 +37,8 @@
     apply let
     eq =, eql
 
+  tofix:
+    (range 0 31270 529) is oposite
   todo:
     to compatibale with linux
     include
@@ -316,6 +318,8 @@
     (define f (lam args ...)) )
 )
 (ali defn defun)
+(alias call/k call/cc)
+(ali mem? member)
 
 (defsyn defn-nest ;(lam(a)(lam(b)(lam () body...))) ;(defnest(asd)1) must err
   ( [_ f args body ...]
@@ -412,7 +416,6 @@
       (append~ xs args)
 ) ) )
 
-(alias call/k call/cc)
 
 (defsyn cacc ;
   ([_ (k) bd ...]
@@ -635,36 +638,45 @@
 
 
 #|
-(def/va%4 asd
+(def asd
+  (case-lam
+    ((a b c) (li a b c))
+    ((a c) (asd a 2 c))
+    ((c) (asd 1 2 c)) ) )
+
+(def/va%4
+  asd
   ((a 1) (s s) (d 3) (f f))
   ((a 1) (s s) (d 3) (f f))
-  (f s)
-  () ()
+  (a d) ;
+  ()
+  (a d) ;
   (((a s d f) (li a s d f)))
-  () () )
+  ()
+  () )
 |#
-(def-syn (def/va%4 stx) ;
-  (syn-case stx ()
-    ;_ g, Ori-pairs para-pairs; main-cnt=(A D), Ori-tmp-cnt=() tmp-cnt=(); Ret, lamPara=[] bodyPara=[]
-    ([_       g ori-pairs ([a A] ... [z Z]) main-cnt ori-tmp-cnt [C1 C2 ...] ret [  lamPara ...] (  bodyPara ...)]
+(def-syn (def/va%4 stx)
+  (syn-case stx ()  
+    ;_ g, Ori-pairs para-pairs; main-cnt=(A D), Ori-tmp-cnt=() tmp-cnt=(?); Ret, lamPara=[] bodyPara=[]
+    ([_           g ori-pairs ([a A] ... [z Z]) main-cnt ori-tmp-cnt [C1 C2 ...] ret [  lamPara ...] (  bodyPara ...)]
       (identifier? #'Z)                
-      #'(def/va%4 g ori-pairs ([a A] ...  ) main-cnt ori-tmp-cnt [C1 C2 ...] ret [z lamPara ...] (z bodyPara ...))
-    )                                                                      
-    ([_       g ori-pairs ([a A] ... [z Z]) main-cnt ori-tmp-cnt [C1 C2 ...] ret [  lamPara ...] (  bodyPara ...)]
-                                                                           
-      #'(def/va%4 g ori-pairs ([a A] ...  ) main-cnt ori-tmp-cnt [   C2 ...] ret [  lamPara ...] (Z bodyPara ...))
-    )
-    ([_ g ori-pairs ([a A] ... [z Z]) (A0 ...) ori-tmp-cnt [         ] (ret ...) [tmp ...] (rest ...)] ;
-      #'(def/va%4 g ori-pairs ([a A] ...) (A0 ...) ori-tmp-cnt [         ] (ret ...) [z tmp ...] (z rest ...))
+      #'(def/va%4 g ori-pairs ([a A] ...      ) main-cnt ori-tmp-cnt [C1 C2 ...] ret [z lamPara ...] (z bodyPara ...))
     )    
-    ([_ g ori-pairs (               ) (A0 B0 ...) (   ) [ ] (ret ...) [tmp ...] (rest ...)]
+    ([_           g ori-pairs ([a A] ... [z Z]) main-cnt ori-tmp-cnt [C1 C2 ...] ret [  lamPara ...] (  bodyPara ...)]
+                                                                           
+      #'(def/va%4 g ori-pairs ([a A] ...      ) main-cnt ori-tmp-cnt [   C2 ...] ret [  lamPara ...] (Z bodyPara ...))
+    )
+    ([_           g ori-pairs ([a A] ... [z Z]) (A0 ...) ori-tmp-cnt [         ] (ret ...) [  tmp ...] (  rest ...)] ;
+      #'(def/va%4 g ori-pairs ([a A] ...      ) (A0 ...) ori-tmp-cnt [         ] (ret ...) [z tmp ...] (z rest ...))
+    )    
+    ([_           g ori-pairs (               ) (A0 B0 ...) (   ) [ ] (ret ...) [tmp ...] (rest ...)]
       #'(def/va%4 g ori-pairs ori-pairs  (   B0 ...) (A0) (A0) (ret ...) [] [])
     )
-    ([_ g ori-pairs (               ) (A0 B0 ...) (ori-tmp-cnt ...) [] (ret ...) [tmp ...] (rest ...)]
-      #'(def/va%4 g ori-pairs ori-pairs  (   B0 ...) (A0 ori-tmp-cnt ...) (A0 ori-tmp-cnt ...) (ret ... ([tmp ...](g rest ...))) [] [])
+    ([_           g ori-pairs (               ) (A0 B0 ...) (   ori-tmp-cnt ...) []                   (ret ...)                         [tmp ...] (rest ...)] ;tmp
+      #'(def/va%4 g ori-pairs ori-pairs         (   B0 ...) (A0 ori-tmp-cnt ...) (A0 ori-tmp-cnt ...) (ret ... ([tmp ...](g rest ...))) [] [])
     )
-    ([_ g ori-pairs para-pairs        [         ] ori-tmp-cnt       []       (ret ...) [tmp ...] (rest ...)] ;
-      #'(def g (case-lam ret ... ([tmp ...](g rest ...)))) ;
+    ([_           g ori-pairs para-pairs        [         ] ori-tmp-cnt       []       (ret ...) [tmp ...] (rest ...)]
+      #'(def     g (case-lam ret ...  ([tmp ...](g rest ...))  ))
 ) ) )
 ;_ g, Ori-pairs para-pairs; main-cnt=(A D), Ori-tmp-cnt tmp-cnt=(); Ret, lamPara=[] bodyPara=[]
 
@@ -673,13 +685,18 @@
   asd
   ((a 1) s (d 3) f)
   ((a 1) (s s) (d 3) (f f))
+  [a d] ;
   (li a s d f))
 |#
 (defsyn def/va%3
   ([_ g ori [(a b) ...] (defas ...) body ...]
-    (def/va%4 g [(a b) ...] [(a b) ...]
-      (defas ...)
-      [] []
+    (def/va%4
+      g
+      [(a b) ...]
+      [(a b) ...]
+      (defas ...) ;
+      []
+      (defas ...) ;<- []
       [([a ...] body ...)]
       [] []
 ) ) )
@@ -693,15 +710,20 @@
   (syn-case stx ()
     ([_ g ori (x y ...) (ret ...) [defas ...] body ...]
       (identifier? #'x)
-      #'(def/va%2 g ori (y ...) (ret ... [x x]) [x defas ...] body ...) ) ;
+      #'(def/va%2 g ori (y ...) (ret ... [x x]) [defas ...] body ...) ) ;?
     ([_ g ori (x y ...) (ret ...) [defas ...] body ...]
-      #'(def/va%2 g ori (y ...) (ret ... x) [defas ...] body ...) )
+      #'(def/va%2 g ori (y ...) (ret ... x) [x defas ...] body ...) )
     ([_ g ori () (ret ...) [defas ...] body ...]
       #'(def/va%3 g ori (ret ...) [defas ...] body ...)
 ) ) )
 
 ;(def/va (asd [a 1] s [d 3] f) (li a s d f)) ;=> (asd 'A 'S 'F)
-;To test: (def/va (asd [a 1] [b 2] [c 3]) (li a b c)) ;(asd)
+
+#| To test:
+ (defn/va asd ([a 1] [b 2] c) (li a b c)) ;(asd 3)
+ (def/va (asd [a 1] [b 2] [c 3]) (li a b c)) ;(asd)
+ (defn/va asd ([a 1] [b 2] [c 3]) (li a b c)) ;(asd)
+|#
 (defsyn def/va
   ([_ (g p ...) body ...]
     (def/va%2 g (p ...) (p ...) () () body ...)
@@ -1849,9 +1871,9 @@
   (def (rec x ret)
     (if*
       (nilp  x) ret
-      (atomp x) (cons x ret)
+      (atomp x) (cons x ret) ;
       (rec (car x)
-        (rec (cdr x) ret)
+        (rec (cdr x) ret) ;
   ) ) )
   (rec xs nil)
 )
@@ -1981,6 +2003,11 @@
     (if (eql resl test) 'Ok
       'Wrong!!
 ) ) )
+
+; convert
+
+(def (dec->hex dec) (fmt "0x~x" dec))
+(def (hex->dec hex) (evs (str-replace hex "0" "#" 1))) ;@
 
 ; math
 
@@ -3389,7 +3416,6 @@
   (if (str/pair/vec? x) eql eq)
 )
 
-(ali mem? member)
 (def (mem?% x xs) (bool(mem? x xs)))
 
 (defn remov-same (xs)
