@@ -1,5 +1,5 @@
 #|
-# chez-lib.ss v1.8 - written by Faiz
+# chez-lib.ss v1.81 - written by Faiz
 
   suffixes:
     @ bad / slow
@@ -86,6 +86,7 @@
     (g x y)~> apply~= reduce-> curry
 
   tolearn:
+    import
     fork-thread
     profile
     eg: chez/examples/matrix.ss
@@ -659,7 +660,8 @@
   (syn-case stx ()  
     ;_ g, Ori-pairs para-pairs; main-cnt=(A D), Ori-tmp-cnt=() tmp-cnt=(?); Ret, lamPara=[] bodyPara=[]
     ([_           g ori-pairs ([a A] ... [z Z]) main-cnt ori-tmp-cnt [C1 C2 ...] ret [  lamPara ...] (  bodyPara ...)]
-      (identifier? #'Z)                
+      ;(identifier? #'Z) ; Test: when Z=list failed!
+      (eq #'z #'Z)
       #'(def/va%4 g ori-pairs ([a A] ...      ) main-cnt ori-tmp-cnt [C1 C2 ...] ret [z lamPara ...] (z bodyPara ...))
     )    
     ([_           g ori-pairs ([a A] ... [z Z]) main-cnt ori-tmp-cnt [C1 C2 ...] ret [  lamPara ...] (  bodyPara ...)]
@@ -709,8 +711,8 @@
 (def-syn (def/va%2 stx)
   (syn-case stx ()
     ([_ g ori (x y ...) (ret ...) [defas ...] body ...]
-      (identifier? #'x)
-      #'(def/va%2 g ori (y ...) (ret ... [x x]) [defas ...] body ...) ) ;?
+      [identifier? #'x]
+      #'(def/va%2 g ori (y ...) (ret ... [x x]) [defas ...] body ...) ) ;
     ([_ g ori (x y ...) (ret ...) [defas ...] body ...]
       #'(def/va%2 g ori (y ...) (ret ... x) [x defas ...] body ...) )
     ([_ g ori () (ret ...) [defas ...] body ...]
@@ -1159,7 +1161,7 @@
     (_ db 0)
 ) )
 
-(defn nth-of (x db)
+(defn nth-of-x (x db)
   (let ([g (eq/eql x)])
     (def (_ db n)
       (if (nilp db) Fal
@@ -1168,6 +1170,7 @@
     ) ) )
     (_ db 1)
 ) )
+(ali nth-of nth-of-x)
 
 ; list
 
@@ -2382,6 +2385,20 @@
         (map [curry cons (car xs)] rest)
 ) ) ) )
 
+;(deep-reverse '(1(2 3)4)) ;-> '(4(3 2)1)
+(def (deep-reverse xs)
+  (def (d-rev xs)
+    (if~
+      [nilp xs] '() ;
+      [pair? xs]
+      (map d-rev
+        (rev xs) ) ;
+      else xs
+  ) )
+  (d-rev xs)
+)
+(ali d-rev deep-reverse)
+
 ;onlisp
 
 (def-syn [nreverse! stx]
@@ -2476,7 +2493,7 @@
     (if*
       (eq n 0) x0
       (eq n 1) x ;(* x x0) ==> x
-      (letn ([m (_(>> n 1))] [y (g m m)])
+      (letn ([m (_ (>> n 1))] [y (g m m)])
         (if (fxeven? n) y
           [g y x]
     ) ) )
