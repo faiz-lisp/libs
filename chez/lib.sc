@@ -1,5 +1,5 @@
 #|
-# chez-lib.ss v1.81 - written by Faiz
+# chez-lib.ss v1.81d - written by Faiz
 
   suffixes:
     @ bad / slow
@@ -130,6 +130,7 @@
     (small .. big) -> (big .. small)
     ?: setq
     听说cond要按发生概率高低来排序
+    def/va: case-lambda needs 1~2X time more than original lambda
 
   to-debug:
     (trace fib)?, assert&print, debug?, call/cc+assert+return.false ...
@@ -249,7 +250,7 @@
 (ali elap elapse)
 (ali origin $primitive)
 
-(alias head list-head) ;
+(alias head list-head) ;.
 (alias redu~ redu~/fold)
 (alias strhead! string-truncate!) ;
 ; To put aliases here
@@ -614,7 +615,7 @@
       ret ... ([p ...] (f p ... Q))
   ) )
   ([_ f (p ...) () ret ...]
-    (case-lam ret ...) ;
+    (case-lam ret ...) ;@
 ) )
 (defsyn defn/values
   ([_ f (p ...) [V ...] body ...]
@@ -629,14 +630,6 @@
         ([p ...] body ...) ]
 ) ) )
 (alias defn/defa defn/values)
-;(ali def/defa def/values) ;?
-
-;(ali def/va  def/values)
-;(ali defn/va defn/values)
-;(ali def/defa defn/values) ;To fix def/defa
-;(defn/va asd (a b c d) [3 4] (list a b c d)) ;(asd 1 2 5) -> '(1 2 5 4)
-;(def/va (asd a) [] (list a)) ;(asd 2) -> '(2)
-
 
 #|
 (def asd
@@ -655,12 +648,13 @@
   (((a s d f) (li a s d f)))
   ()
   () )
+to-test:
+  (def/va (asd a b [li li]) (li a b)) ;(asd 1 2) ;--> ok
 |#
 (def-syn (def/va%4 stx)
   (syn-case stx ()  
     ;_ g, Ori-pairs para-pairs; main-cnt=(A D), Ori-tmp-cnt=() tmp-cnt=(?); Ret, lamPara=[] bodyPara=[]
     ([_           g ori-pairs ([a A] ... [z Z]) main-cnt ori-tmp-cnt [C1 C2 ...] ret [  lamPara ...] (  bodyPara ...)]
-      ;(identifier? #'Z) ; Test: when Z=list failed!
       (eq #'z #'Z)
       #'(def/va%4 g ori-pairs ([a A] ...      ) main-cnt ori-tmp-cnt [C1 C2 ...] ret [z lamPara ...] (z bodyPara ...))
     )    
@@ -2085,6 +2079,10 @@
 (def (!==  . xs) [not-exist-meet? =   xs])
 (def (!eql . xs) [not-exist-meet? eql xs])
 
+(def (reset-randseed)
+  (random-seed (time-nanosecond (current-time)))
+)
+
 (def (pow-num? x) ;int
   (if (eq 0 [& x (1- x)]) Tru
     Fal
@@ -2413,11 +2411,13 @@
       #'(rev xs) )
 ) )
 
+(ali list-divide-per group)
+
 (def (group xs m) ;?(= m per) (group '(1 2 3 4 5 6) 3 1)
-  (let ([m (if [eq 0 m]1 m)]) ;
+  (let ([m (if [eq 0 m] 1 m)]) ;
     (def (_ ret xs)
       (if (nilp xs) ret
-        (let ([aa (head xs m)] [dd (tail xs m)]) ;
+        (let ([aa (head% xs m)] [dd (tail xs m)]) ;%
           [_ (cons aa ret) dd]
     ) ) )
     (rev (_ nil xs)) ;
@@ -3407,13 +3407,23 @@
   (inexact (/ (clock) CLOCKS_PER_SEC)) ;
 )
 
+(def (get-sec) ;x get-sec-nano
+  (letn ( [time(current-time)]
+      [sec(time-second time)]
+      [nano(time-nanosecond time)] )
+    ;(list sec nano)
+    (+ sec (.* [pow 10 -9] nano))
+) )
+
 (defsyn cost
   ( [_ g]
     (let ([t 0] [res nil])
       (echol (fmt ": ~s" 'g))
-      (set! t (clock))
+      ;(set! t (clock))
+      (set! t (get-sec))
       (set! res g)
-      (set! t (inexa(/ (-(clock)t) CLOCKS_PER_SEC)))
+      ;(set! t (inexa(/ (-(clock)t) CLOCKS_PER_SEC)))
+      (set! t (-(get-sec)t))
       (echol ": elapse =" t "s")
       (li res t)
 ) ) )
@@ -3421,9 +3431,11 @@
   ( [_ g]
     (let ([t 0])
       (echol (fmt ": ~s" 'g))
-      (set! t (clock))
+      ;(set! t (clock))
+      (set! t (get-sec))
       g
-      (set! t (inexa(/ (-(clock)t) CLOCKS_PER_SEC)))
+      ;(set! t (inexa(/ (-(clock)t) CLOCKS_PER_SEC)))
+      (set! t (-(get-sec)t))
       (echol ": elapse =" t "s")
       t
 ) ) )
