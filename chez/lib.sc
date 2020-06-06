@@ -1,5 +1,5 @@
 #|
-# chez-lib.ss v1.81d - written by Faiz
+# chez-lib.ss v1.81e - written by Faiz
 
   suffixes:
     @ bad / slow
@@ -3407,12 +3407,18 @@ to-test:
   (inexact (/ (clock) CLOCKS_PER_SEC)) ;
 )
 
-(def (get-sec) ;x get-sec-nano
+; (def (get-sec) ;x get-sec-nano
+  ; (letn ( [time(current-time)]
+      ; [sec(time-second time)]
+      ; [nano(time-nanosecond time)] )
+    ; (+ sec (.* [pow 10 -9] nano))
+; ) )
+(def (get-ms) ;x get-sec-nano
   (letn ( [time(current-time)]
       [sec(time-second time)]
       [nano(time-nanosecond time)] )
     ;(list sec nano)
-    (+ sec (.* [pow 10 -9] nano))
+    (+ (.* sec [pow 10 3]) (.* nano [pow 10 -6]))
 ) )
 
 (defsyn cost
@@ -3420,11 +3426,12 @@ to-test:
     (let ([t 0] [res nil])
       (echol (fmt ": ~s" 'g))
       ;(set! t (clock))
-      (set! t (get-sec))
+      (set! t (get-ms))
       (set! res g)
       ;(set! t (inexa(/ (-(clock)t) CLOCKS_PER_SEC)))
-      (set! t (-(get-sec)t))
-      (echol ": elapse =" t "s")
+      (set! t (-(get-ms)t))
+      ;(echol ": elapse =" t "s")
+      (echol ": elapse =" t "ms")
       (li res t)
 ) ) )
 (defsyn elapse ;just elapse but result
@@ -3432,10 +3439,10 @@ to-test:
     (let ([t 0])
       (echol (fmt ": ~s" 'g))
       ;(set! t (clock))
-      (set! t (get-sec))
+      (set! t (get-ms))
       g
       ;(set! t (inexa(/ (-(clock)t) CLOCKS_PER_SEC)))
-      (set! t (-(get-sec)t))
+      (set! t (-(get-ms)t))
       (echol ": elapse =" t "s")
       t
 ) ) )
