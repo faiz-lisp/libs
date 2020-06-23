@@ -1,5 +1,5 @@
 #|
-# chez-lib.ss v1.81e - written by Faiz
+# chez-lib.ss v1.81k - written by Faiz
 
   suffixes:
     @ bad / slow
@@ -247,6 +247,9 @@
 (alias newln newline)
 (alias nil?  null?)
 
+(ali 1st car)
+(ali 2nd cadr)
+(ali 3rd caddr)
 (ali elap elapse)
 (ali origin $primitive)
 
@@ -1201,6 +1204,20 @@ to-test:
     ([maker test]       (find-x-match maker test 1   0  10000))
 ) )
 (ali find-x-meet find-x-match)
+
+(def (flat-list-include ys0 xs0)
+  (def (_ ys xs)
+    (if (nilp xs) Tru
+      (if (nilp ys) Fal
+        (let ([dy (cdr ys)])
+          (if [eq (car xs) (car ys)]
+            [_ dy (cdr xs)]
+            [_ dy xs0]
+  ) ) ) ) )
+  (_ ys0 xs0)
+)
+;(flat-list-include '(1 2 3 4 5) '(2 3))
+(ali list-include flat-list-include)
 
 (defn/defa assoc-g (x ys g) [id]
 ;(def (assoc-g x ys g)
@@ -3205,14 +3222,17 @@ to-test:
   (_ xs nil)
 )
 
-;
-(def (randnums n) ;(random-seed elapse)
-  (def (_ m)
-    (if (< m 1) nil
-      (cons (random n) [_ (1- m)]) ;
-  ) )
-  (_ n)
-)
+(def randnums
+  (case-lam
+    ([m n]
+      (def (_ n)
+        (if (< n 1) nil
+          (cons (random m) [_ (1- n)])
+      ) )
+      (_ n)
+    )
+    ([n] [randnums n n])
+) )
 
 ;exercise
 (defsyn try
@@ -3416,9 +3436,9 @@ to-test:
 (def (get-ms) ;x get-sec-nano
   (letn ( [time(current-time)]
       [sec(time-second time)]
-      [nano(time-nanosecond time)] )
+      [nano(time-nanosecond time)] ) ;
     ;(list sec nano)
-    (+ (.* sec [pow 10 3]) (.* nano [pow 10 -6]))
+    (+ (.* sec [pow 10 3]) (.* nano [pow 10 -6])) ;
 ) )
 
 (defsyn cost
@@ -3443,7 +3463,7 @@ to-test:
       g
       ;(set! t (inexa(/ (-(clock)t) CLOCKS_PER_SEC)))
       (set! t (-(get-ms)t))
-      (echol ": elapse =" t "s")
+      (echol ": elapse =" t "ms")
       t
 ) ) )
 
