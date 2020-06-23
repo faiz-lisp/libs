@@ -1,5 +1,5 @@
 #|
-# chez-lib.ss v1.81k - written by Faiz
+# chez-lib.ss v1.81l - written by Faiz
 
   suffixes:
     @ bad / slow
@@ -2072,6 +2072,9 @@ to-test:
     [(x) (inexa(/ x 100))]
     [(x . ys) (foldl mod x ys)]
 ) )
+
+(def ./ (compose exa->inexa /))
+(def .* (compose exa->inexa *))
 
 (def (pow . xs)
   (if [nilp (cdr xs)]
