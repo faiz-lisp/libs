@@ -1,11 +1,11 @@
 #|
-# chez-lib.ss v1.81l - written by Faiz
+# Chez-lib.sc v1.82d - Written by Faiz
 
-  suffixes:
-    @ bad / slow
+  Suffixes:
+    @ slow / bad
     % theoretic / internal / paras->list
-    ;~ optimized
-    * extensional
+    ~ just fast
+    * optimized
     ! with side-effect
 
   prefixes:
@@ -254,7 +254,7 @@
 (ali origin $primitive)
 
 (alias head list-head) ;.
-(alias redu~ redu~/fold)
+(alias redu~ redu~/fold) ;. (redu~ list '(1 2 3))
 (alias strhead! string-truncate!) ;
 ; To put aliases here
 
@@ -2468,6 +2468,26 @@ to-test:
   (_ xs nil)
 )
 
+;(map-all list '(1 2) '(4) '(5 6)) ;~> 4 lists
+(def (map-for-combinations g . xz)
+  (def (~ ret tmp0 xs0 xz)  
+    (def [_ ret tmp xs xz]
+      (if (nilp tmp)
+        (if (nilp xz)
+          (map (curry redu g) ret) ;;~map ~redu
+          (~ nil [rev ret] (car xz) (cdr xz)) ) ;;@
+        (if (nilp xs)
+          [_ ret (cdr tmp) xs0 xz] ;
+          [_ (cons [cons(car xs)(car tmp)] ret) tmp (cdr xs) xz] ;;
+    ) ) )
+    [_ ret tmp0 xs0 xz]
+  )  
+  (d-rev [~ nil (list nil) (car xz) (cdr xz)]) ;remov nil xz
+) ;4x+ slow
+(ali map-all map-for-combinations)
+
+;
+
 (def (explode-sym sym) ;[explode 'asd] ~> '[a s d]
   (map string->symbol [str->ss (sym->str sym)])
 )
@@ -2751,13 +2771,27 @@ to-test:
   ; (reverse! xs)
 ; )
 
-(def (mk-cps g) ;cps相当于做了堆栈交换?
+(def (rcdr xs)
+  (def (_ xs)
+    (if (nilp (cdr xs)) nil
+      (cons (car xs) [_ (cdr xs)])
+  ) )
+  (_ xs)
+) ;a bit slower than (head xs n)
+
+(def (mk-cps0 g) ;cps相当于做了堆栈交换?
   (lam args
     (let ([r (rev args)])
-      ( (car r)
+      ( [car r] ;last
         (redu g
-          (rev (cdr r))
+          (rev (cdr r)) ;
 ) ) ) ) )
+(def (mk-cps g)
+  (lam args
+    ( [last args]
+      (redu g
+        (rcdr args)
+) ) ) )
 
 ; ((lambda (x) (list x (list 'quote x)))
   ; '(lambda (x) (list x (list 'quote x)))))
@@ -2995,6 +3029,7 @@ to-test:
 (def (lis-copy xs)
   (vec->lis (lis->vec xs))
 )
+
 
 ;vec: mk-vec n; vec-fill!; vec-set! v i x;
 
@@ -3651,7 +3686,9 @@ to-test:
 
 (def (repeats xs n) ;ng
   (redu (curry map li) (xn2lis xs n))
-) ;仍然漏了部分重复的情况
+  ; (redu (curry map-all list)
+    ; (nx->list n xs) )
+)
 
 
 
