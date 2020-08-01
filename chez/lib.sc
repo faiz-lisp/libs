@@ -1,5 +1,7 @@
+(define (version) "V1.83") ;
+
 #|
-# Chez-lib.sc v1.82d - Written by Faiz
+# Chez-lib.sc - Written by Faiz
 
   Suffixes:
     @ slow / bad
