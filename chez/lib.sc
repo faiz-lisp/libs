@@ -40,8 +40,9 @@
     eq =, eql
 
   tofix:
-    (range 0 31270 529) is oposite
+    (range 0 31270 529) is opposite
   todo:
+    (deep-action/map/apply g xs [seq]): d-remov
     to compatibale with linux
     include
     end->car
@@ -88,6 +89,7 @@
     (g x y)~> apply~= reduce-> curry
 
   tolearn:
+    duck-compiler:match
     import
     fork-thread
     profile
@@ -147,8 +149,8 @@
 
   common:
     (_ X x)
-    ? syt -> '
-    common/special... common-special...
+    syt -> '
+    common/special... - :
 
 ```
 |#
