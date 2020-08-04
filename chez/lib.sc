@@ -1,4 +1,4 @@
-(define (version) "V1.83") ;
+(define (version) "V1.84") ;
 
 #|
 # Chez-lib.sc - Written by Faiz
@@ -3295,21 +3295,13 @@ to-test:
 
 ;(alias defnest defn-nest)
 
-;(_ f-test nvars gs xs (repeat? *t) goal)
-(defn exist-match? (g cnt  xs) ;nested-g cnt-of-vars testing-data
-  (defn ~ (g cnt  xs i  ret)
-    (if (>= i (len xs))
-      *f
-      (if (<= cnt 0)
-        (letn ( [tes (try (g))]
-                [b   (if (not(try-fail? tes)) tes *f)] )
-          (if b ret *f) ) ;end
-        (letn ( [x (xth xs i)]
-                [b (~ (g x) (1- cnt)  xs 0  ret)]  ) ;inner
-          (if b (cons x b)
-            (~ g cnt  xs (1+ i)  ret) ;outer
-  ) ) ) ) )
-  (~ g cnt  xs 0  nil)
+(def (exist-match? g xs)
+  (def (_ xs)
+    (if (nilp xs) Fal
+      (if (g (car xs)) Tru ;
+        [_ (cdr xs)]
+  ) ) )
+  (_ xs)
 )
 
 ;todo: Dijkstra
