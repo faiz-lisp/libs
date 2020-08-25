@@ -1,4 +1,4 @@
-(define (version) "V1.84") ;
+(define (version) "V1.86") ;
 
 #|
 # Chez-lib.sc - Written by Faiz
@@ -18,7 +18,7 @@
     ~var: temp variety
     *global_var*
 
-  versions: fast; Grace; safe; experimental;
+  versions: fast; Grace; safe; trial; refined; stable;
 
   Which ops are slow?:
     last-pair last list?
@@ -42,6 +42,7 @@
   tofix:
     (range 0 31270 529) is opposite
   todo:
+    api?
     (deep-action/map/apply g xs [seq]): d-remov
     to compatibale with linux
     include
@@ -157,6 +158,8 @@
 
 (import (chezscheme)) ;for --program parameter
 ;(collect-request-handler void) ;~ for some optimizing
+
+;(load (str *lib-path* "/match.ss"))
 
 ;#%car = ($primitive car) = ($primitive 1 car) = car
 ;#%car = ($primitive car) = ($primitive 1 car) = car
@@ -1517,9 +1520,14 @@ to-test:
           (buffer-mode block)
           (make-transcoder (utf-8-codec)) ) ] ;
     )
-    (let loop ([ret ""])
-      (if (eof-object? (peek-char ou)) ret ;\r\n?
-        [loop (str ret (read-char ou))] ;% strcat
+    ; (let loop ([ret ""])
+      ; (if (eof-object? (peek-char ou)) ret ;\r\n?
+        ; [loop (str ret (read-char ou))] ;% strcat 
+    ; ) )
+    (let loop ([ret nil])
+      (if (eof-object? (peek-char ou))
+        (str (rev ret)) ;\r\n?
+        [loop (cons (read-char ou) ret)] ;% strcat 
 ) ) ) )
 
 
@@ -2461,13 +2469,13 @@ to-test:
   [rev(_ xs (car ns) (cdr ns) nil nil)]
 )
 
-(defn prune (g xs) ;rec remov-if satisfy g ;!keep
+(def (prune g xs)                           ;rec remov-if satisfy g ;!keep
   (def (_ xs ret)
     (if [nilp xs] (rev ret)
       (let ([a (car xs)][d (cdr xs)])
         (if [consp a] ;
           (_ d (cons [_ a nil] ret))
-          (_ d [? (g a) ret (cons a ret)]) ;
+          (_ d [if (g a) ret (cons a ret)]) ;
   ) ) ) )
   (_ xs nil)
 )
@@ -3508,7 +3516,21 @@ to-test:
 
 (def (mem?% x xs) (bool(mem? x xs)))
 
-(defn remov-same (xs)
+;(setq a '(1 2 2 3 3 3 4)) ;~> '(2 3)
+(def (filter-same xs)   ;OK
+  (def (_ xs pure same) ;curr .vs. 1.pure, 2.same -> 3.ign
+    (if (nilp xs) same  ;return
+      (let ([a (car xs)])
+        (if (mem? a pure)          ;1
+          (if (mem? a same)        ;2 ;
+            [_ (cdr xs) pure same] ;3
+            [_ (cdr xs) pure (cons a same)] )
+          [_ (cdr xs) (cons a pure) same] ;
+  ) ) ) )
+  (rev [_ xs nil nil])  ;final handling
+)
+
+(def (remov-same xs) ;filter-pure
   (def (_ xs ts)
     (if (nilp xs) ts
       (let ([a (car xs)])
@@ -3773,19 +3795,21 @@ to-test:
       ) ) ) )
 ) ) )
 
+(setq *current-path* (str-replace (command-result "cd") "\r\n" "")) ; ?"Pro File"
+
 ; (def car car%) ;
 ; (def cdr cdr%)
 ; (def cadr (compose car cdr))
 ; (def cddr (compose cdr cdr))
 ;cddddr
 
-
+; how to refine?
 (set! *script-path* ;%
   (car(string->path-file ;
       (car(remove ""
           (string-divide
             (cadr(remove ""
-                (string-divide (get-command-line) " ") ) ) ;
+                (string-divide (get-command-line) " ") ) ) ;ng
             "\""
   ) ) ) ) ) ;bug if just use load
 )
@@ -3796,7 +3820,7 @@ to-test:
 
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
 
 (alias clean restore)
 (def (restore)
