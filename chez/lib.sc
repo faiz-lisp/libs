@@ -1,4 +1,4 @@
-(define (version) "V1.86") ;
+(define (version) "V1.87") ;
 
 #|
 # Chez-lib.sc - Written by Faiz
@@ -2094,6 +2094,8 @@ to-test:
     (fold-left expt (car xs) (cdr xs))
 ) )
 
+(defn float->fix (flo) (flonum->fixnum [round flo]))
+
 (def (not-exist-meet? g xs)
   (def (once ys x)
     (if (nilp ys) Tru ;
@@ -3274,10 +3276,10 @@ to-test:
 
 (def randnums
   (case-lam
-    ([m n]
+    ([n m]
       (def (_ n)
         (if (< n 1) nil
-          (cons (random m) [_ (1- n)])
+          (cons (random m) [_ (1- n)]) ;
       ) )
       (_ n)
     )
