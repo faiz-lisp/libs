@@ -1,12 +1,16 @@
-(define (version) "V1.87") ;
+(define (version) "Chez-lib V1.89")
 
 #|
 # Chez-lib.sc - Written by Faiz
 
+  - Update notes:
+    - 1.89: syn -> syt
+    - 1.88: divide-at
+
   Suffixes:
     @ slow / bad
     % theoretic / internal / paras->list
-    ~ just fast
+    ~ just faster
     * optimized
     ! with side-effect
 
@@ -16,9 +20,11 @@
 
   vars:
     ~var: temp variety
-    *global_var*
+    *global-var*
 
-  versions: fast; Grace; safe; trial; refined; stable;
+  versions:
+    - idea; ideal; refined; stable;
+    - ; fast; Grace; safe; trial; refined; stable;
 
   Which ops are slow?:
     last-pair last list?
@@ -29,7 +35,8 @@
     remove
     lis->vec vec->lis
   fast>:
-    sort, .., cond if, .., map, .., append;
+    consp -> atomp, nilp, lisp, eq
+    sort, .., cond if, .., redu, map, .., append;
     syntax, func
     def_ set!~def alias
     cons vector list
@@ -42,6 +49,7 @@
   tofix:
     (range 0 31270 529) is opposite
   todo:
+    ls
     api?
     (deep-action/map/apply g xs [seq]): d-remov
     to compatibale with linux
@@ -69,6 +77,7 @@
     (_ xs . x) (-> -> x)
     code:dsl->raw
     api-search 可以下载个网页,然后用正则搜索; 每次defn时,记录信息到hashtable
+      - 用法直接searching in lib-files就可以了
     church yc algo
     structure:
       skip-list/max-skip-step/for-spec-type/with-logic, path
@@ -97,7 +106,7 @@
     eg: chez/examples/matrix.ss
     my: let + redu sort! rand eval
     hygienic assq memq define-structure
-    >: [syntax-case see to ;push] defsyn def
+    >: [syntax-case see to ;push] defsyt def
     ;define-syntax syntax-rules syntax->datum=datum
     datum->syntax=syntax=#' with-syntax with-implicit syntax-case #, fluid-let-syntax ...
     (let ([ret ..]) (ev `(setq x ',ret))
@@ -105,7 +114,7 @@
     list: -tail/head/ref
     apis: #%$xxx
     (trace funxxx) (funxxx ...) can show is it a tail form rec
-    hash when def/setq/defsyn ~> api-search
+    hash when def/setq/defsyt ~> api-search
     vec: cons lam/vec def/vec, map for redu, add! del/rm! flat strcat
     sy: rev, vec? flat append? group
     sort: qsort heap merge
@@ -114,8 +123,8 @@
   learned
     body... != body ...
     let-values(<->)
-    def-syn doesnt supp recursion directly, but case
-    def-syn cant be in ano def-syn
+    def-syt doesnt supp recursion directly, but case
+    def-syt cant be in ano def-syn
 
   beauties:
     reverse flat deep-count bump
@@ -127,6 +136,7 @@
     walker
 
   to-optimize:
+    . xs -> xs
     1/2 -> 0.5
     def-syn
     def f g -> alias f g
@@ -170,9 +180,12 @@
 (alias letn     let*)
 (alias bgn      begin)
 (alias quo      quote)
-(alias def-syn  define-syntax)
-(alias syn-ruls syntax-rules)
-(alias syn-case syntax-case)
+(alias def-syt  define-syntax)
+(ali   def-syn  define-syntax)
+(alias syt-ruls syntax-rules)
+(ali   syn-ruls syntax-rules)
+(alias syt-case syntax-case)
+(ali   syn-case syntax-case)
 (alias case-lam case-lambda)
 (alias els      else)
 (alias fn       lambda)
@@ -184,24 +197,23 @@
 (alias lis->vec list->vector)
 (alias vec-len  vector-length)
 
-(def-syn define*
-  (syn-ruls () ;
-    ([_ x] (define* x *v) )
+(def-syt def ;ine*
+  (syt-ruls ()
+    ([_ x] (def x *v))
     ([_ (g . args) body ...]
       (define (g . args) body ...) )
-    ([_ x e] (define x e) ) ;symp? e: e *v
+    ([_ x e] (define x e)) ;sym? e: e *v
     ; ;The followings make def slow:
     ; ([_ g (args ...) body ...]
       ; (define (g args ...) body ...) ) ;
     ; ([_ g args body ...] ;
       ; (define (g . args) body ...) )
 ) )
-(alias def define*)
 
-(def-syn defm ;define-macro <- define-syntax ;to-add (void)
-  (syn-ruls ()
+(def-syt defm ;define-macro <- define-syntax ;to-add (void)
+  (syt-ruls ()
     ( [_ (f . args) body ...]
-      (defsyn f
+      (defsyt f
         ( [_ . args]
           (bgn body ...)
     ) ) )
@@ -248,6 +260,7 @@
 (alias fmt format)
 (alias exec command-result) ;
 (alias sys system)
+;(def (sys cmd) (zero? (system cmd)))
 (alias q exit)
 (alias str-append string-append)
 (alias len length)
@@ -267,31 +280,31 @@
 
 ;
 
-(def-syn defsyn
-  (syn-ruls ()
+(def-syt defsyt
+  (syt-ruls ()
     ( [_ f (expr body ...)] ;;;one ;must be bef (_ f g), or will make wrong meanings
-      (def-syn f
-        (syn-ruls ()
+      (def-syt f
+        (syt-ruls ()
           (expr
             (bgn body ...) ) ) ) ) ;
     ( [_ f g]
-      (def-syn f
-        (syn-ruls ()
+      (def-syt f
+        (syt-ruls ()
           ( [_ . args] ;
             (g . args) ) ) ) )
     ( [_ f (expr ...) ...]   ;multiple
-      (def-syn f
-        (syn-ruls ()
+      (def-syt f
+        (syt-ruls ()
           ( expr
             ...
           )
           ...
 ) ) ) ) )
-(alias def-syt def-syn)
-(alias defsyt defsyn)
+(ali def-syn def-syt)
+(ali defsyn defsyt)
 
-(def-syn (if% stx)
-  (syn-case stx (else)
+(def-syt (if% stx)
+  (syt-case stx (else)
     ([_ () (bd ...)]
     #'(cond bd ...) )
     ([_ (last-expr) (bd ...)]
@@ -299,16 +312,16 @@
     ([_ (k e more ...) (bd ...)]
     #'(if% (more ...) (bd ... [k e])) )
 ) )
-(def-syn (if* stx)
-  (syn-case stx ()
+(def-syt (if* stx)
+  (syt-case stx ()
     ([_ bd ...]
       #'(if% [bd ...] []) ;
       ;#'[sy-redu cond (group (bd ...) 2)] ;sy-group
 ) ) )
 (alias if~ if*)
 
-; (def-syn (if* stx) ;? ?: cond->if
-  ; (syn-case stx (else) ;nil?
+; (def-syt (if* stx) ;? ?: cond->if
+  ; (syt-case stx (else) ;nil?
     ; ([_ k d]
     ; #'(if k d) )
     ; ([_ k d e]
@@ -320,7 +333,7 @@
         ; (if* bd ...) )
 ; ) ) )
 
-(defsyn defun
+(defsyt defun
   ( [_ f (args ...) ]
     (define (f args ...) *v) )
   ( [_ f args ]
@@ -333,7 +346,7 @@
 (alias call/k call/cc)
 (ali mem? member)
 
-(defsyn defn-nest ;(lam(a)(lam(b)(lam () body...))) ;(defnest(asd)1) must err
+(defsyt defn-nest ;(lam(a)(lam(b)(lam () body...))) ;(defnest(asd)1) must err
   ( [_ f args body ...]
     (define f
       (eval ;
@@ -342,7 +355,7 @@
           `(lam () body ...)
           (map [lam (x) `(lam (,x))] 'args) ;
 ) ) ) ) )
-(defsyn defn-snest ;(lam(a)(lam(b) body...))
+(defsyt defn-snest ;(lam(a)(lam(b) body...))
   ( [_ f args body ...]
     (define f
       (eval
@@ -366,12 +379,12 @@
 ;(def_ (asd n) [if(< n 1) nil (cons n [_ (1- n)])])
 ;(alias def_ def/_)
 
-(defsyn defn_
+(defsyt defn_
   ( [_$% f args bd...] ;
     (def_ (f . args) bd...)
 ) )
 
-(defsyn setq
+(defsyt setq
   [(_ a) (set! a (void))]
   ((_ a b)
     (bgn (set! a b) (if *will-ret* a))
@@ -384,8 +397,8 @@
 
 ;
 
-(def-syn (append!% stx) ;
-  (syn-case stx ()
+(def-syt (append!% stx) ;
+  (syt-case stx ()
     ( [_ xs . yz]
       [identifier? #'xs]
       #'(bgn
@@ -429,7 +442,7 @@
 ) ) )
 
 
-(defsyn cacc ;
+(defsyt cacc ;
   ([_ (k) bd ...]
     (call/cc [lam (k) bd ...])
 ) )
@@ -515,14 +528,14 @@
 ) )
 ;(alias conj conz)
 
-(defsyn sy/num-not-defa-vals%
+(defsyt sy/num-not-defa-vals%
   ([_ () n] n)
   ([_ ((x vx)) n]       (sy/num-not-defa-vals% () n))
   ([_ (x) n]            (sy/num-not-defa-vals% () (fx1+ n)))
   ([_ ((x vx) y ...) n] (sy/num-not-defa-vals% (y ...) n))
   ([_ (x y ...) n]      (sy/num-not-defa-vals% (y ...) (fx1+ n))) ;
 )
-(defsyn sy/num-not-defa-vals ;good for: (_ a [b 1] c)
+(defsyt sy/num-not-defa-vals ;good for: (_ a [b 1] c)
   ([_ . xs] (sy/num-not-defa-vals% xs 0))
 )
 
@@ -560,7 +573,7 @@
   ) ) ) )
   (_ xs)
 )
-(defsyn sy/list-the-front ;
+(defsyt sy/list-the-front ;
   ( [_ ()] '())
   ( [_ ((x ...) . xs)] '((x ...) . xs))
   ( [_ (x)] (cons '(x) [sy/list-the-front ()])) ;
@@ -601,7 +614,7 @@
 ;(defa->vals/aux% '((a)(b 3)(c)) '(2 4) 0 2 1) -> '(2 3 4)
 
 ;(call-with-values (lam()(values 'a 'b vc)) g) ;
-(defsyn def/defa@ ;@ (_ (g [a] [b 2] [c ]) (+ a b c)) ;test on fib0 found some issue
+(defsyt def/defa@ ;@ (_ (g [a] [b 2] [c ]) (+ a b c)) ;test on fib0 found some issue
   ( [_ (g . paras) body ...] (def/defa@ g paras body ...))
   ( [_ g paras% body ...]
     (define (g . args) ; case-lam is good
@@ -619,7 +632,7 @@
 ;We may def func again with some defa paras, and test the func with just one variable para.
 
 
-(defsyn defn/values%
+(defsyt defn/values%
   ([_ f (p ... q) (V ... Q) ret ...]
     (defn/values% f (p ...) (V ...)
       ret ... ([p ...] (f p ... Q))
@@ -627,13 +640,13 @@
   ([_ f (p ...) () ret ...]
     (case-lam ret ...) ;@
 ) )
-(defsyn defn/values
+(defsyt defn/values
   ([_ f (p ...) [V ...] body ...]
     (def f
       [defn/values% f (p ...) [V ...] ;
         ([p ...] body ...) ]
 ) ) )
-(defsyn def/values
+(defsyt def/values
   ([_ (f p ...) [V ...] body ...]
     (def f
       [defn/values% f (p ...) [V ...] ;
@@ -661,8 +674,8 @@
 to-test:
   (def/va (asd a b [li li]) (li a b)) ;(asd 1 2) ;--> ok
 |#
-(def-syn (def/va%4 stx)
-  (syn-case stx ()  
+(def-syt (def/va%4 stx)
+  (syt-case stx ()  
     ;_ g, Ori-pairs para-pairs; main-cnt=(A D), Ori-tmp-cnt=() tmp-cnt=(?); Ret, lamPara=[] bodyPara=[]
     ([_           g ori-pairs ([a A] ... [z Z]) main-cnt ori-tmp-cnt [C1 C2 ...] ret [  lamPara ...] (  bodyPara ...)]
       (eq #'z #'Z)
@@ -694,7 +707,7 @@ to-test:
   [a d] ;
   (li a s d f))
 |#
-(defsyn def/va%3
+(defsyt def/va%3
   ([_ g ori [(a b) ...] (defas ...) body ...]
     (def/va%4
       g
@@ -712,8 +725,8 @@ to-test:
   () ()
   (li a s d f))
 |#
-(def-syn (def/va%2 stx)
-  (syn-case stx ()
+(def-syt (def/va%2 stx)
+  (syt-case stx ()
     ([_ g ori (x y ...) (ret ...) [defas ...] body ...]
       [identifier? #'x]
       #'(def/va%2 g ori (y ...) (ret ... [x x]) [defas ...] body ...) ) ;
@@ -730,15 +743,16 @@ to-test:
  (def/va (asd [a 1] [b 2] [c 3]) (li a b c)) ;(asd)
  (defn/va asd ([a 1] [b 2] [c 3]) (li a b c)) ;(asd)
 |#
-(defsyn def/va
+(defsyt def/va
   ([_ (g p ...) body ...]
     (def/va%2 g (p ...) (p ...) () () body ...)
 ) )
-(defsyn defn/va
+(defsyt defn/va
   ([_ g (p ...) body ...]
     (def/va%2 g (p ...) (p ...) () () body ...)
 ) )
 (ali def/defa def/va)
+;test: (def/va (sublis xs [s 0] n) [head(tail xs s)n]) (sublis '(1 2 3) 2)
 
 ;common
 
@@ -747,8 +761,8 @@ to-test:
     (foldl g (car xs) (cdr xs)) ;wrong sometimes: values map echo ;echo ~> '(*v) ;evs ;i/o
 ) ) ;curry?
 
-(def-syn vec-for ;
-  (syn-ruls (in)
+(def-syt vec-for ;
+  (syt-ruls (in)
     ( [_ i in ve body ...]
       (quiet ;
         (vector-map ;
@@ -757,8 +771,8 @@ to-test:
           ve )
 ) ) ) )
 
-(def-syn for ;(for-each g . xz)
-  (syn-ruls (in : as)
+(def-syt for ;(for-each g . xz)
+  (syt-ruls (in : as)
     ; ((_ i in list body ...)
      ; (map (lambda (i) ;map makes action-sequence mess, could use (for-each do list)
                   ; body ...)
@@ -840,7 +854,7 @@ to-test:
     ) ) ) ) ) ) )
 ) )
 
-(defsyn while
+(defsyt while
   ([_ k bd ...]
     (call/cc
       (lam (break)
@@ -862,10 +876,10 @@ to-test:
       [nilp (cdr gs)]
       (lam xs (ret [redu(car gs) xs]))
       (_
-        (lam (x) (ret [(car gs) x]))
+        (lam (x) (ret [(car gs) x])) ;?
         (cdr gs)
   ) ) )
-  (_ id gs)
+  (_ id gs) ;values?
 )
 
 (def floor->fix
@@ -932,16 +946,16 @@ to-test:
 
 (def string-divide
   (case-lam
-    ([s sep]
+    ([s sep] ;to supp, such as: sep="; "
       (if (eql "" sep) [str->ss s]
-        (let ([chs(string->list s)] [csep(car(string->list sep))]) ;
+        (let ([chs (string->list s)] [csep (car(string->list sep))]) ;car?
           (def (rev->str chs)
-            (list->string(rev chs)) )
-          (def (_ chs tmp ret)
-            (if [nilp chs] (cons[rev->str tmp]ret)
-              (let ([a(car chs)]) ;
-                (if [eq a csep] ;
-                  [_ (cdr chs) nil (cons[rev->str tmp]ret)] ;
+            (list->string (rev chs)) )
+          (def (_ chs tmp ret) ;tmp is good
+            (if [nilp chs] (cons [rev->str tmp] ret)
+              (let ([a (car chs)]) ;a?
+                (if [eq a csep] ;eq?
+                  [_ (cdr chs) nil (cons [rev->str tmp] ret)] ;
                   [_ (cdr chs) (cons a tmp) ret]
           ) ) ) )
           [rev (_ chs nil nil)]
@@ -1060,21 +1074,21 @@ to-test:
 
 ;sy-
 
-(defsyn sy-rev% ;
+(defsyt sy-rev% ;
   ([_ () (ret ...)] '(ret ...)) ;
   ([_ (x) (ret ...)]
     '(x ret ...) )
   ([_ (x ys ...) (ret ...)]
     (sy-rev% [ys ...] [x ret ...]) )
 )
-(defsyn sy-rev
+(defsyt sy-rev
   ([_ (xs ...)]
     [sy-rev% (xs ...) ()] )
   ([_ xs ...]
     [sy-rev% (xs ...) ()] )
 )
 
-(defsyn lam-nest% ;(_ (a b) bd...) -> [lam(a)[lam(b) bd...]]
+(defsyt lam-nest% ;(_ (a b) bd...) -> [lam(a)[lam(b) bd...]]
   ([_ () (ret ...)]
     [ret ...] )
   ([_ (x) (ret ...)]
@@ -1082,7 +1096,7 @@ to-test:
   ([_ (x ys ...) (ret ...)]
     [lam(x) (lam-nest% (ys ...) [ret ...])] ) ;
 )
-(defsyn lam-rnest%
+(defsyt lam-rnest%
   ([_ () (ret ...)]
     [ret ...] )
   ([_ (x) (ret ...)]
@@ -1091,19 +1105,19 @@ to-test:
     (lam-rnest% (ys ...) [lam(x) [ret ...]]) )
 )
 
-(defsyn lam-rnest
+(defsyt lam-rnest
   ([_ (xs ...) bd ...]
     [lam-rnest% (xs ...) [lam() bd ...]] )
 )
-(defsyn lam-srnest
+(defsyt lam-srnest
   ([_ (xs ...) bd ...]
     [lam-rnest% (xs ...) (bgn bd ...)] )
 )
-(defsyn lam-nest
+(defsyt lam-nest
   ([_ (xs ...) bd ...]
     [lam-nest% (xs ...) [lam() bd ...]] )
 )
-(defsyn lam-snest
+(defsyt lam-snest
   ([_ (xs ...) bd ...]
     [lam-nest% (xs ...) [bgn bd ...]] )
 )
@@ -1147,7 +1161,7 @@ to-test:
 ) )
 
 
-; (defsyn cons~
+; (defsyt cons~
   ; ([_ xs ...] ;[_ 1 2 3 '(4)] ~> [~ '(4) 3 2 1]
     ; (redu cons* (sy-rev xs ...))
 ; ) )
@@ -1394,7 +1408,7 @@ to-test:
   (_ xs nths 1)
 )
 
-(defsyn set-xth!% ;chg-nth
+(defsyt set-xth!% ;chg-nth
   ( [_ xs i y]
     (letn [ (n (fx1+ i))
             (m (1- i))
@@ -1403,7 +1417,7 @@ to-test:
             (pos (ncdr xs n)) ]
       (set! xs (append pre (cons y pos)) ) ;
 ) ) )
-(defsyn set-xth! ;chg-nth
+(defsyt set-xth! ;chg-nth
   ( [_ xs i y]
     (letn [ (n (fx1+ i))
             (m (1- i))
@@ -1412,7 +1426,7 @@ to-test:
             (pos (ncdr xs n)) ] ;
       (set! xs (append! pre (cons y pos)) ) ;!
 ) ) )
-(defsyn set-nth!
+(defsyt set-nth!
   ([_ xs n y] (set-xth! xs (1- n) y))
 )
 
@@ -1423,7 +1437,7 @@ to-test:
       (setq xs (append! pre (cons y pos)))
 ) ) )
 
-(defsyn swap-xths!
+(defsyt swap-xths!
   ( [_ xs i j]
     (let ([t (nth xs i)])
       (set-xth! xs i (nth xs j))
@@ -1434,7 +1448,7 @@ to-test:
       (set-xth! xs i (nth ys j))
       (set-xth! ys j t)
 ) ) )
-(defsyn swap-nths!
+(defsyt swap-nths!
   ( (_ xs m n)
     (swap-xths! xs (1- m) (1- n)) )
   ( (_ xs m ys n)
@@ -1442,8 +1456,8 @@ to-test:
 )
 
 
-(def-syn (pop stx)
-  (syn-case stx ()
+(def-syt (pop stx)
+  (syt-case stx ()
     ( [_ xs]
       [identifier? #'xs]
       #'(setq xs (cdr xs)) )
@@ -1451,8 +1465,8 @@ to-test:
       #'(car xs) )
 ) )
 
-(def-syn (push stx)
-  (syn-case stx () ;
+(def-syt (push stx)
+  (syt-case stx () ;
     ([_ args ... x]
       (identifier? #'x) ;
       #'(setq x (cons* args ... x)) ) ;
@@ -1462,8 +1476,8 @@ to-test:
 
 ; to make return similar to bgn/values, with multiple input values
 
-(def-syn (rpush stx)
-  (syn-case stx ()
+(def-syt (rpush stx)
+  (syt-case stx ()
     ([_ args ... xs]
       (identifier? #'xs)
       #'(bgn
@@ -1531,7 +1545,7 @@ to-test:
 ) ) ) )
 
 
-(defsyn type-main ;todo detail for printf
+(defsyt type-main ;todo detail for printf
   ( [_ x]
     (cond
       ;((ffi-s? (any->str 'x))  "ffi") ;x if not sym
@@ -1619,6 +1633,7 @@ to-test:
   (_ nil 0 xns)
 )
 (def (xn-mk-list . xns) (xn-mk-list% xns))
+(ali xn->list xn-mk-list)
 
 (defn nx->list (n x) ;a bit faster than make-list
   (def (_ n rest)
@@ -1791,7 +1806,7 @@ to-test:
     #f
 ) )
 
-(defsyn getf
+(defsyt getf
   ((_ xs xtag)
     (if (<(len xs)2) nil
       (if (eq (car xs) 'xtag)
@@ -1799,18 +1814,18 @@ to-test:
         (ev `(getf (cddr xs) xtag)) ;
 ) ) ) )
 
-(defsyn getf-xth-iter
+(defsyt getf-xth-iter
   ((_ x f1 i)
     (if (<(len x)2) nil ;
       (if (eq (car x) 'f1)
         (fx1+ i)
         (ev `(getf-xth-iter (cddr x) f1 (+ 2 i)))
 ) ) ) )
-(defsyn getf-xth
+(defsyt getf-xth
   ((_ x f1)
     (getf-xth-iter x f1 0)
 ) )
-(defsyn setf* ;(_ mapA tagX a)
+(defsyt setf* ;(_ mapA tagX a)
   ((_ x f1 a)
     (letn [ (i (getf-xth x f1)) ]
       (if (nilp i) (if *will-ret* x nil)
@@ -1869,8 +1884,8 @@ to-test:
   [_ xs (cdr nths) (1-(car nths))] ;
 )
 
-;lisp use quo and defsyn, instead of get-addr in c
-(defsyn swap
+;lisp use quo and defsyt, instead of get-addr in c
+(defsyt swap
   ( [_ a b]
     (if (eql a b)
       nil
@@ -2085,7 +2100,10 @@ to-test:
     [(x . ys) (foldl mod x ys)]
 ) )
 
-(def ./ (compose exa->inexa /))
+(def ./@ (compose exa->inexa /))
+; (def (./ . nums)
+  ; (exa->inexa (redu / nums))
+; )
 (def .* (compose exa->inexa *))
 
 (def (pow . xs)
@@ -2433,7 +2451,7 @@ to-test:
 
 ;onlisp
 
-(def-syn [nreverse! stx]
+(def-syt [nreverse! stx]
   (syntax-case stx ()
     ([_ xs]
       [identifier? #'xs]
@@ -2502,7 +2520,7 @@ to-test:
 
 ;
 
-(def (explode-sym sym) ;[explode 'asd] ~> '[a s d]
+(def (sym-explode sym) ;[explode 'asd] ~> '[a s d]
   (map string->symbol [str->ss (sym->str sym)])
 )
 
@@ -2520,14 +2538,16 @@ to-test:
 ;(dmap [lam(x)(if[nilp x]0 x)] xs)
 ;(def +.ori +) ;+.0
 
-(def (sum-of-tree xs)
-  (def (_ x ret)
-    (if~
-      (nump x) (+ ret x)
-      (atomp x) ret ;inc nilp
-      [_ (car x) [_ (cdr x) ret]]
-  ) )
-  (_ xs 0)
+(def (sum-of-tree@ xs) ;@ < redu~ < +
+  (redu~ + xs)
+  ; (def (_ x ret)
+    ; (if~
+      ; (num?  x) (+ ret x) ;
+      ; (atomp x) ret ;nilp
+      ; (_ (car x)
+        ; [_ (cdr x) ret]
+  ; ) ) )
+  ; (_ xs 0)
 )
 (def (sum-of-list xs)
   (def (_ x ret)
@@ -2535,7 +2555,7 @@ to-test:
       (nilp x) ret
       (let ([a (car x)])
         (_ (cdr x)
-          (if (nump a) (+ ret a) ret) ;
+          (if (num? a) (+ ret a) ret) ;
   ) ) ) )
   (_ xs 0)
 )
@@ -2843,7 +2863,7 @@ to-test:
 )
 (alias ev-full full-eval)
 
-; (defsyn lam-snest
+; (defsyt lam-snest
   ; ([x] nil)
 ; )
 
@@ -2867,7 +2887,7 @@ to-test:
 (def (mk-chur num)
   (lam (f)
     [lam (x) ;lam-snest
-      ((redu compose (xn2lis f num)) x)
+      ((redu compose (xn2lis f num)) x) ;
   ] )
 )
 ; (call-snest chur* (mk-chur 123) (mk-chur 3) inc 0)
@@ -3045,21 +3065,21 @@ to-test:
 )
 
 
-;vec: mk-vec n; vec-fill!; vec-set! v i x;
+;vec@: mk-vec n; vec-fill!; vec-set! v i x;
 
-(alias mk-vec make-vector)
-(alias vec-copy vector-copy)
-(alias vec-len vector-length)
-(alias vec-set-fnum! vector-set-fixnum!)
-(alias vec-set! vector-set-fixnum!)
-(alias vecar vec-car)
+(ali vec-len  vector-length)
+(ali mk-vec   make-vector)
+(ali vec-copy vector-copy)
+(ali vec-set-fnum! vector-set-fixnum!)
+(ali vec-set! vector-set-fixnum!)
+(ali vecar    vec-car)
 
-(def-syn (ve-push* stx)
-  (syn-case stx () ;
-    ([_ args ... x]
+(def-syt (ve-push* stx)
+  (syt-case stx () ;
+    ( [_ args ... x]
       (identifier? #'x) ;
       #'[setq x (ve-cons* args ... x)] ) ;mk-vec will slower than list's
-    ([_ . args]
+    ( [_ . args]
       #'(ve-cons* . args)
 ) ) )
 
@@ -3130,12 +3150,12 @@ to-test:
 ) )
 
 (def (vec-tail ve m)
-  (letn ([n [-(vec-len ve)m]][ret (mk-vec n)])
+  (letn ([n (-(vec-len ve)m)][ret (mk-vec n)])
     (for [i n]
       (vec-set-fnum! ret i [vec-ref ve [+ m i]]) )
     ret
 ) )
-(def vec-cdr (rcurry vec-tail  1))
+(def vec-cdr (rcurry vec-tail 1)) ;@
 (alias vecdr vec-cdr)
 
 (defn vec-dmap (g xs) ;
@@ -3200,7 +3220,6 @@ to-test:
       (vec-copy! ret (redu + [head ns i]) (xth vz i)) )
     ret
 ) )
-
 
 
 ;algo for vec-sort
@@ -3287,7 +3306,7 @@ to-test:
 ) )
 
 ;exercise
-(defsyn try
+(defsyt try
   ([_ exp]
     (guard (x (els x)) exp) ;(condition? #condition) -> *t
 ) )
@@ -3320,18 +3339,30 @@ to-test:
 
 (define (memoize proc)
   (let ([cache '()])
-    (lambda (x)
+    (lambda (x) ;
       (cond
-        [(assq x cache) => cdr] ;(cdr resl)
+        [(assq x cache) => cdr] ;(call cdr resl)
         [else
           (let ([ans (proc x)])
-            (set! cache (cons (cons x ans) cache))
+            (set! cache (cons(cons x ans)cache))
             ans
 ) ] ) ) ) )
 
 ;;; standard prelude @
 
 ; list utilities
+
+;(divide-at (str->list "asd") 1 2) ~> '([#\a]..)
+(def (divide-at xs i)
+  (def (_ ret xs j)
+    (if (nilp xs)
+      (list ret nil) ;
+      (if (eq j i) ;
+        (list ret xs)
+        [_ (cons(car xs)ret) (cdr xs) (1+ j)]
+  ) ) )
+  (_ nil xs 0)
+)
 
 (define (split n xs)
   (let loop ((n n) (xs xs) (zs '()))
@@ -3396,7 +3427,7 @@ to-test:
 
 ;;
 
-(defn call-nest (g . xs)
+(defn call-nest (g . xs) ;
   (defn ~ (g xs)
     (if (nilp xs) (g)
       (~ (g (car xs)) (cdr xs))
@@ -3426,7 +3457,7 @@ to-test:
 ;(_ fname (var1 var2) ret FName (void* void*))
 ;(_ bool Beep (freq=1047 dura))
 
-(defsyn defc*
+(defsyt defc*
   ( [_ f]
     (defc* f (void)) ) ;
   ( [_ f args]
@@ -3436,10 +3467,10 @@ to-test:
   ( [_ api args ret f] ;f is case-sensitive ;how many args ;void* is ok too ;no ret is ok too ;
     (def f (ffi (sym->str 'api) args ret)) ) ;outer-proc ;todo f?
   ( [_ api args ret f rems]
-    (defc* api args ret f) )
-)
+    (defc* api args ret f)
+) )
 
-(defsyn defc
+(defsyt defc
   ( [_ ret f args]
     (def f (ffi (sym->str 'f) args ret)) )
   ( [_ fnam ret api args] ;
@@ -3447,10 +3478,11 @@ to-test:
   ( [_ fnam rems ret api args]
     (defc fnam ret api args) )
   ( [_ fnam rems ret api args flg]
-    (def fnam (ffi flg (sym->str 'api) args ret)) )
-)
+    (def fnam (ffi flg (sym->str 'api) args ret))
+) )
 
 ;
+
 (load-lib "kernel32.dll") ;Beep
 (defc* GetCommandLineA () string get-command-line)
 (defc beep (freq dura) void* Beep (void* void*))
@@ -3485,7 +3517,7 @@ to-test:
     (+ (.* sec [pow 10 3]) (.* nano [pow 10 -6])) ;
 ) )
 
-(defsyn cost
+(defsyt cost
   ( [_ g]
     (let ([t 0] [res nil])
       (echol (fmt ": ~s" 'g))
@@ -3498,7 +3530,7 @@ to-test:
       (echol ": elapse =" t "ms")
       (li res t)
 ) ) )
-(defsyn elapse ;just elapse but result
+(defsyt elapse ;just elapse but result
   ( [_ g]
     (let ([t 0])
       (echol (fmt ": ~s" 'g))
@@ -3545,8 +3577,8 @@ to-test:
 
 ;Code written by Oleg Kiselyov
 
-(def-syn ppat ;ppattern for ?
-  (syn-ruls (? comma unquote quote) ;comma for unquo?
+(def-syt ppat ;ppattern for ?
+  (syt-ruls (? comma unquote quote) ;comma for unquo?
     ([_ v ? kt kf] kt)
     ([_ v () kt kf] (if (nilp v) kt kf))
     ((_ v (quote lit) kt kf) (if (equal? v (quote lit)) kt kf)) ;x?
@@ -3562,8 +3594,8 @@ to-test:
 ;(ppat '(1 b) (,a b) *t *f)
 ;(ppat '(2 3) (,a ,b) b *f)
 
-(def-syn pmatch-aux
-  (syn-ruls (else guard)
+(def-syt pmatch-aux
+  (syt-ruls (else guard)
     ([_ name (rator rand ...) cs ...] ;rator rand
       (let ([v (rator rand ...)])
         (pmatch-aux name v cs ...) )) ;cs?
@@ -3586,8 +3618,8 @@ to-test:
         (ppat v pat (bgn e0 e ...) (fk))
 ) ) ) )
 
-(def-syn pmatch ;~= aux ;p for pat
-  (syn-ruls (else guard)    ;guard for ?
+(def-syt pmatch ;~= aux ;p for pat
+  (syt-ruls (else guard)    ;guard for ?
     ([_ v      (e ...) ...]
       (pmatch-aux  *f  v (e ...) ...) )
     ([_ v name (e ...) ...] ;v for xsValue, name for aux-info
@@ -3688,7 +3720,7 @@ to-test:
     ([xs ys]
       (with? xs ys eql)
 ) ) )
-(def (sym-with? s x)
+(def (with-sym? s x)
   (redu (rcurry with? eq) [map (compose str->list sym->str) (li s x)]) ;rcurry  eq
 )
 
@@ -3697,7 +3729,7 @@ to-test:
 (defm (api? x) (bool [mem? 'x (syms)]))
 
 (def (api-with x) ;(_ 'string) ;-> '(xx-string-xx string-xx blar blar)
-  (filter (rcurry sym-with? x) (syms))
+  (filter (rcurry with-sym? x) (syms))
 )
 
 ;
