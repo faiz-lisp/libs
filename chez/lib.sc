@@ -1,10 +1,11 @@
-(define (version) "Chez-lib V1.9")
+(define (version) "Chez-lib V1.91")
 
 #|
 # Chez-lib.sc - Written by Faiz
 
   - Update notes:
-    - 1.90: add data of jp, doremi
+    - 1.91: add logic for dividing vowels in japanese; add T, F;
+    - 1.90: Add data of jp, doremi
     - 1.89: syn -> syt
     - 1.88: divide-at
 
@@ -453,18 +454,20 @@
 
 ;
 
-(def *f #f)
-(def *t #t)
-(def *v (void))
-(def *e '[(err)]) ;
-(def nil '()) ;
-(def spc " ")
-(def Fal  *f) ;
-(def Tru  *t)
-(def No   *f)
-(def Yes  *t)
-(def Void *v)
-(def Err  *v) ;
+(def    *f   #f)
+(def    *t   #t)
+(def    *v   (void))
+(def    *e   '[(err)]) ;
+(def    nil  '()) ;
+(def    T    #t)
+(def    F    #f)
+(def    No   *f)
+(def    Yes  *t)
+(def    spc  " ")
+(def    Void *v)
+(def    Err  *v) ;
+(define Tru  *t)
+(define Fal  *f)
 
 (def void? (curry eq *v))
 (def (str/pair? x) [or(string? x)(pair? x)]) ;x
@@ -3830,6 +3833,13 @@ to-test:
       ) ) ) )
 ) ) )
 
+(def (sym->chs sym)
+  (str->list (sym->str sym))
+)
+(def (chs->sym chs)
+  (str->sym (list->str chs))
+)
+
 ; data
 
 (setq *tab/jp/key-a-A* ;Xy: y: a i u e o ;z: n
@@ -3857,6 +3867,28 @@ to-test:
     [256 288 320 1024/3 384 1280/3 480] ;Hz
     ;512? pre*2
 ) )
+
+; logic for data
+
+(def (jp/prono-divide prono) ;pronounce: hi ra ga na->ひらがな
+  (let ( [vowels '(#\a #\i #\u #\e #\o )]
+      [spec  #\n] )
+    (def (~ cs ret tmp flg) ;aft-n
+      (if (nilp cs) (cons tmp ret)
+        (letn ( [a (car cs)] [d (cdr cs)]
+            [a.tmp (cons a tmp)] ) ;
+          (if~
+            (mem? a vowels)
+              [~ d (cons a.tmp ret) nil Fal]
+            flg
+              [~ d (cons tmp ret) (cons a nil) Fal]
+            (eq a spec)
+              [~ d ret a.tmp Tru]
+            [~ d ret a.tmp Fal]
+    ) ) ) )
+    (map chs->sym
+      (deep-reverse [~ (sym->chs prono) nil nil Fal]) ;
+) ) )
 
 ;
 
