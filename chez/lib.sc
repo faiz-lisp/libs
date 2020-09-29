@@ -1,171 +1,171 @@
-(define (version) "Chez-lib V1.92")
+(define (version) "Chez-lib V1.92a")
 
 #|
 # Chez-lib.sc - Written by Faiz
 
   - Update notes:
+    - 1.92a change format of notes
     - 1.92: update api-with: symbol -> macro
     - 1.91: add logic for dividing vowels in japanese; add T, F;
     - 1.90: Add data of jp, doremi
     - 1.89: syn -> syt
     - 1.88: divide-at
 
-  Suffixes:
-    @ slow / bad
-    % theoretic / internal / paras->list
-    ~ just faster
-    * optimized
-    ! with side-effect
+  - Suffixes:
+    - @ slow / bad
+    - % theoretic / internal / paras->list
+    - ~ just faster
+    - * optimized
+    - ! with side-effect
 
-  prefixes:
-    sy/ syntax
-    ~ return a reverse result
+  - prefixes:
+    - sy/ syt/ for syntax
+    - ~ returns a reverse result
 
-  vars:
-    ~var: temp variety
-    *global-var*
+  - vars:
+    - ~var: temp variety
+    - *global-var*
 
-  versions:
+  - versions:
     - idea; ideal; refined; stable;
     - ; fast; Grace; safe; trial; refined; stable;
 
-  Which ops are slow?:
-    last-pair last list?
-    length
-    append->conz->rpush ... slowest
-    ? eval->reduce->compose/curry
-    strcat
-    remove
-    lis->vec vec->lis
-  fast>:
-    consp -> atomp, nilp, lisp, eq
-    sort, .., cond if, .., redu, map, .., append;
-    syntax, func
-    def_ set!~def alias
-    cons vector list
-  not the fastest achievement:
-    reverse append! list-copy
-  ?
-    apply let
-    eq =, eql
+  - Which ops are slow?:
+    - last-pair last list?
+    - length
+    - append->conz->rpush ... slowest
+    - ? eval->reduce->compose/curry
+    - strcat
+    - remove
+    - lis->vec vec->lis
+  - fast>:
+    - consp -> atomp, nilp, lisp, eq
+    - sort, .., cond if, .., redu, map, .., append;
+    - syntax, func
+    - def_ set!~def alias
+    - cons vector list
+  - not the fastest achievement:
+    - reverse append! list-copy
+  - ?
+    - apply let
+    - eq =, eql
 
-  tofix:
-    (range 0 31270 529) is opposite
-  todo:
-    ls
-    api?
-    (deep-action/map/apply g xs [seq]): d-remov
-    to compatibale with linux
-    include
-    end->car
-    control[include convert]: strings, files, ...
-    ~(!= 1 2 1), (> 3 2 1), (coprime? 2 15 4)
-    (part-of-num 123456 -3 2)~> 45
-    see to: verb.adj.a./act, prep./judge,
-    lam/defa lam_ lam/ret
-    [random-seed (floor->fix(w* (elapse(fib 500000))))] ;too closed ;~> parallel universe id bytes, not work well
-      time.ms->md5->cost.ns?
-      . time activities info net:salt io? file:psw/md5
-    (nthof-g-resl rand '(3 1 4) [max-n 10000000])
-    (nthof-g rand nth [len 1])
-    d-rev
-    grep grep-rn
-    reload? load compile udp/tcp get/post v3 juce ui test trace
-    if(!#f/nil): cadr caddr cadddr eval, repl
-    cond case, for map lambda foldl reduce curry recursion repl foldr
-    (range% sum f p n)
-    ? (str/sep sep . xs)
-      -> echo
-      => any->int
-    (_ xs . x) (-> -> x)
-    code:dsl->raw
-    api-search 可以下载个网页,然后用正则搜索; 每次defn时,记录信息到hashtable
+  - tofix:
+    - (range 0 31270 529) is opposite
+  - todo:
+    - ls
+    - api?
+    - (deep-action/map/apply g xs [seq]): d-remov
+    - to compatibale with linux
+    - include
+    - end->car
+    - control[include convert]: strings, files, ...
+    - ~(!= 1 2 1), (> 3 2 1), (coprime? 2 15 4)
+    - (part-of-num 123456 -3 2)~> 45
+    - see to: verb.adj.a./act, prep./judge,
+    - lam/defa lam_ lam/ret
+    - [random-seed (floor->fix(w* (elapse(fib 500000))))] ;too closed ;~> parallel universe id bytes, not work well
+      - time.ms->md5->cost.ns?
+      - . time activities info net:salt io? file:psw/md5
+    - (nthof-g-resl rand '(3 1 4) [max-n 10000000])
+    - (nthof-g rand nth [len 1])
+    - d-rev
+    - grep grep-rn
+    - reload? load compile udp/tcp get/post v3 juce ui test trace
+    - if(!#f/nil): cadr caddr cadddr eval, repl
+    - cond case, for map lambda foldl reduce curry recursion repl foldr
+    - (range% sum f p n)
+    - ? (str/sep sep . xs)
+      - -> echo
+      - => any->int
+    - (_ xs . x) (-> -> x)
+    - code:dsl->raw
+    - api-search 可以下载个网页,然后用正则搜索; 每次defn时,记录信息到hashtable
       - 用法直接searching in lib-files就可以了
-    church yc algo
-    structure:
-      skip-list/max-skip-step/for-spec-type/with-logic, path
-        ?`[(4) ([(1 a) 2 3] [4 5 6])]
-      b+tree
-    AI:
-    math memo combinations, eval. match
-    solve24 https usd/usdt pcre
-    def/setq-glob
-    car! (cons 1 2 '()) cons! conz!
-    rev!
-    seems that newlisp call scheme and c will be more free.
+    - church yc algo
+    - structure:
+      - skip-list/max-skip-step/for-spec-type/with-logic, path
+        - ?`[(4) ([(1 a) 2 3] [4 5 6])]
+      - b+tree
+    - AI:
+    - math memo combinations, eval. match
+    - solve24 https usd/usdt pcre
+    - def/setq-glob
+    - car! (cons 1 2 '()) cons! conz!
+    - rev!
+    - seems that newlisp call scheme and c will be more free.
 
-  cant/hard: get-addr
-  cant implete the same thing:
-    apply call/cc?
+  - cant/hard: get-addr
+  - cant implete the same thing:
+    - apply call/cc?
 
-  seq of implements:
-    (g x y)~> apply~= reduce-> curry
+  - seq of implements:
+    - (g x y)~> apply~= reduce-> curry
 
-  tolearn:
-    duck-compiler:match
-    import
-    fork-thread
-    profile
-    eg: chez/examples/matrix.ss
-    my: let + redu sort! rand eval
-    hygienic assq memq define-structure
-    >: [syntax-case see to ;push] defsyt def
-    ;define-syntax syntax-rules syntax->datum=datum
-    datum->syntax=syntax=#' with-syntax with-implicit syntax-case #, fluid-let-syntax ...
-    (let ([ret ..]) (ev `(setq x ',ret))
-    un/trace debug
-    list: -tail/head/ref
-    apis: #%$xxx
-    (trace funxxx) (funxxx ...) can show is it a tail form rec
-    hash when def/setq/defsyt ~> api-search
-    vec: cons lam/vec def/vec, map for redu, add! del/rm! flat strcat
-    sy: rev, vec? flat append? group
-    sort: qsort heap merge
-    abs(fxnum) <= 2^29-1 (> 5E)
-    (eval-when (compile) (optimize-level 3))
-  learned
-    body... != body ...
-    let-values(<->)
-    def-syt doesnt supp recursion directly, but case
-    def-syt cant be in ano def-syn
+  - tolearn:
+    - duck-compiler:match
+    - import
+    - fork-thread
+    - profile
+    - eg: chez/examples/matrix.ss
+    - my: let + redu sort! rand eval
+    - hygienic assq memq define-structure
+    - >: [syntax-case see to ;push] defsyt def
+    - ;define-syntax syntax-rules syntax->datum=datum
+    - datum->syntax=syntax=#' with-syntax with-implicit syntax-case #, fluid-let-syntax ...
+    - (let ([ret ..]) (ev `(setq x ',ret))
+    - un/trace debug
+    - list: -tail/head/ref
+    - apis: #%$xxx
+    - (trace funxxx) (funxxx ...) can show is it a tail form rec
+    - hash when def/setq/defsyt ~> api-search
+    - vec: cons lam/vec def/vec, map for redu, add! del/rm! flat strcat
+    - sy: rev, vec? flat append? group
+    - sort: qsort heap merge
+    - abs(fxnum) <= 2^29-1 (> 5E)
+    - (eval-when (compile) (optimize-level 3))
+  - learned
+    - body... != body ...
+    - let-values(<->)
+    - def-syt doesnt supp recursion directly, but case
+    - def-syt cant be in ano def-syn
 
-  beauties:
-    reverse flat deep-count bump
+  - beauties:
+    - reverse flat deep-count bump
 
-  to-be-beauty:
-    curry compose
+  - to-be-beauty:
+    - curry compose
 
-  to-try
-    walker
+  - to-try
+    - walker
 
-  to-optimize:
-    . xs -> xs
-    1/2 -> 0.5
-    def-syn
-    def f g -> alias f g
-    nilp (cdr xs)
-    [] -> ()
-    (small .. big) -> (big .. small)
-    ?: setq
-    听说cond要按发生概率高低来排序
-    def/va: case-lambda needs 1~2X time more than original lambda
+  - to-optimize:
+    - . xs -> xs
+    - 1/2 -> 0.5
+    - def-syn
+    - def f g -> alias f g
+    - nilp (cdr xs)
+    - [] -> ()
+    - (small .. big) -> (big .. small)
+    - ?: setq
+    - 听说cond要按发生概率高低来排序
+    - def/va: case-lambda needs 1~2X time more than original lambda
 
-  to-debug:
-    (trace fib)?, assert&print, debug?, call/cc+assert+return.false ...
+  - to-debug:
+    - (trace fib)?, assert&print, debug?, call/cc+assert+return.false ...
 
-  flow: work->fast->safe->complete
-    ;must-inits
-    ; main-apis
-    ;apis-for-main
-    ; apps-api
-    ;endups
-    ; test
+  - flow: work->fast->safe->complete
+    - ;must-inits
+    - ; main-apis
+    - ;apis-for-main
+    - ; apps-api
+    - ;endups
+    - ; test
 
-  common:
-    (_ X x)
-    syt -> '
-    common/special... - :
-
+  - common:
+    - (_ X x)
+    - syt -> '
+    - common/special... - :
 ```
 |#
 
@@ -3933,5 +3933,4 @@ to-test:
 
 #|
 ```
-
 |#
