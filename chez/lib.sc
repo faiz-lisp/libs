@@ -1,9 +1,10 @@
-(define (version) "Chez-lib V1.89")
+(define (version) "Chez-lib V1.9")
 
 #|
 # Chez-lib.sc - Written by Faiz
 
   - Update notes:
+    - 1.90: add data of jp, doremi
     - 1.89: syn -> syt
     - 1.88: divide-at
 
@@ -3828,6 +3829,36 @@ to-test:
               (In ...) Ret
       ) ) ) )
 ) ) )
+
+; data
+
+(setq *tab/jp/key-a-A* ;Xy: y: a i u e o ;z: n
+ '( [  a あ ア][  i い イ][  u う ウ][  e え エ][  o お オ]
+    [ ka か カ][ ki き キ][ ku く ク][ ke け ケ][ ko こ コ] 
+    [ sa さ サ][ si し シ][ su す ス][ se せ セ][ so そ ソ] 
+    [ ta た タ][chi ち チ][tsu つ ツ][ te て テ][ to と ト] 
+    [ na な ナ][ ni に ニ][ nu ぬ ヌ][ ne ね ネ][ no の ノ] 
+    [ ha は ハ][ hi ひ ヒ][ fu ふ フ][ he へ ヘ][ ho ほ ホ] 
+    [ ma ま マ][ mi み ミ][ mu む ム][ me め メ][ mo も モ] 
+    [ ya や ヤ][ yu ゆ ユ][ yo よ ヨ]                
+    [ ra ら ラ][ ri り リ][ ru る ル][ re れ レ][ ro ろ ロ]
+    [ wa わ ワ][ wo を ヲ]                           
+    [  n ん ン]                                      
+    [ ga が ガ][ gi ぎ ギ][ gu ぐ グ][ ge げ ゲ][ go ご ゴ]
+    [ za ざ ザ][ zi じ ジ][ zu ず ズ][ ze ぜ ゼ][ zo ぞ ゾ]
+    [ da だ ダ][ di ぢ ヂ][ du づ ヅ][ de で デ][ do ど ド] ;,ji
+    [ ba ば バ][ bi び ビ][ bu ぶ ブ][ be べ ベ][ bo ぼ ボ]
+    [ pa ぱ パ][ pi ぴ ピ][ pu ぷ プ][ pe ぺ ペ][ po ぽ ポ]
+) )
+(ali *jp-tab* *tab/jp/key-a-A*)
+
+(setq aud/doremi
+  '(
+    [256 288 320 1024/3 384 1280/3 480] ;Hz
+    ;512? pre*2
+) )
+
+;
 
 (setq *current-path* (str-replace (command-result "cd") "\r\n" "")) ; ?"Pro File"
 
