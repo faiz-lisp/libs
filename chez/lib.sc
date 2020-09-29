@@ -1,9 +1,10 @@
-(define (version) "Chez-lib V1.91")
+(define (version) "Chez-lib V1.92")
 
 #|
 # Chez-lib.sc - Written by Faiz
 
   - Update notes:
+    - 1.92: update api-with: symbol -> macro
     - 1.91: add logic for dividing vowels in japanese; add T, F;
     - 1.90: Add data of jp, doremi
     - 1.89: syn -> syt
@@ -3700,11 +3701,11 @@ to-test:
   (case-lam
     ([xs ys eql] ;(_ '(1 2 3 4) '(1 2/3)) ;-> Y/N
       (def (_ xs ys)  
-        (if (nilp ys) Tru ;xs?
-          (if (nilp xs) Fal
+        (if (nilp ys) T ;xs?
+          (if (nilp xs) F
             (if [eql (car xs) (car ys)]
               [_ (cdr xs) (cdr ys)]
-              Fal
+              F
       ) ) ) )
       (_ xs ys))
     ([xs ys]
@@ -3712,28 +3713,30 @@ to-test:
 ) ) )
 (def with?
   (case-lam
-    ([xs ys eql] ;(_ '(1 2 3 4) '(2 3/4)) ;-> Y/N ;with/contain
+    ( [xs ys eql] ;(_ '(1 2 3 4) '(2 3/4)) ;-> Y/N ;with/contain
       (def (_ xs)
-        (if (nilp xs) Fal
-          (if (with-head? xs ys eql) Tru ;xs?
+        (if (nilp xs) F
+          (if (with-head? xs ys eql) T ;xs?
             [_ (cdr xs)] ;len?
       ) ) )
-      (if (nilp ys) Fal
+      (if (nilp ys) F
         (_ xs)
     ) )
-    ([xs ys]
+    ( [xs ys]
       (with? xs ys eql)
 ) ) )
 (def (with-sym? s x)
-  (redu (rcurry with? eq) [map (compose str->list sym->str) (li s x)]) ;rcurry  eq
-)
+  (redu (rcurry with? eq) ;
+    (map (compose str->list sym->str) ;
+      (list s x) ;
+) ) )
 
 (def (syms) (environment-symbols (interaction-environment)))
 
 (defm (api? x) (bool [mem? 'x (syms)]))
 
-(def (api-with x) ;(_ 'string) ;-> '(xx-string-xx string-xx blar blar)
-  (filter (rcurry with-sym? x) (syms))
+(defm (api-with x) ;(_ string) ;-> '(xx-string-xx string-xx blar blar)
+  (filter (rcurry with-sym? 'x) (syms))
 )
 
 ;
