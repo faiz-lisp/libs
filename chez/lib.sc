@@ -1,9 +1,12 @@
-(define (version) "Chez-lib V1.92a")
+(define (version) "Chez-lib V1.93")
+(define (git-url) "https://github.com/faiz-lisp/libs.git")
 
 #|
 # Chez-lib.sc - Written by Faiz
 
   - Update notes:
+    - 1.93: fast-expt, (_ g x [n 1])
+    - 1.92b my git-url
     - 1.92a change format of notes
     - 1.92: update api-with: symbol -> macro
     - 1.91: add logic for dividing vowels in japanese; add T, F;
@@ -732,26 +735,25 @@ to-test:
 |#
 (def-syt (def/va%2 stx)
   (syt-case stx ()
-    ([_ g ori (x y ...) (ret ...) [defas ...] body ...]
-      [identifier? #'x]
-      #'(def/va%2 g ori (y ...) (ret ... [x x]) [defas ...] body ...) ) ;
-    ([_ g ori (x y ...) (ret ...) [defas ...] body ...]
-      #'(def/va%2 g ori (y ...) (ret ... x) [x defas ...] body ...) )
-    ([_ g ori () (ret ...) [defas ...] body ...]
-      #'(def/va%3 g ori (ret ...) [defas ...] body ...)
+    ([_ g ori (x y ...) (ret ...) [defas ...]  body ...] (identifier? #'x)
+      #'(def/va%2 g ori (y   ...) (ret ... [x x]) (defas   ...) body ...) ) ;
+    ([_ g ori (x y ...) (ret ...) [defas ...]  body ...]
+      #'(def/va%2 g ori (y   ...) (ret ... x    ) (x defas ...) body ...) )
+    ([_ g ori (       ) (ret ...) [defas ...]  body ...]
+      #'(def/va%3 g ori           (ret ...) (defas ...) body ...)
 ) ) )
 
 ;(def/va (asd [a 1] s [d 3] f) (li a s d f)) ;=> (asd 'A 'S 'F)
-
 #| To test:
  (defn/va asd ([a 1] [b 2] c) (li a b c)) ;(asd 3)
  (def/va (asd [a 1] [b 2] [c 3]) (li a b c)) ;(asd)
  (defn/va asd ([a 1] [b 2] [c 3]) (li a b c)) ;(asd)
 |#
 (defsyt def/va
-  ([_ (g p ...) body ...]
-    (def/va%2 g (p ...) (p ...) () () body ...)
+  ([_ (f x ...) body ...]
+    (def/va%2 f (x ...) (x ...) () () body ...) ;
 ) )
+
 (defsyt defn/va
   ([_ g (p ...) body ...]
     (def/va%2 g (p ...) (p ...) () () body ...)
@@ -2569,8 +2571,8 @@ to-test:
 
 (def (fast-expt-algo x n g x0) ;g need to meet the Commutative Associative Law
   (def (_ n)
-    (if*
-      (eq n 0) x0
+    (if~
+      (eq n 0) x0 ;
       (eq n 1) x ;(* x x0) ==> x
       (letn ([m (_ (>> n 1))] [y (g m m)])
         (if (fxeven? n) y
@@ -2579,6 +2581,22 @@ to-test:
   )
   (_ n)
 ) ; N mod z ?=> a^q*s^w*d^e mod z => ... ; encrypt: 椭圆曲线加密 ; 所有基于群幂的离散对数的加密算法
+(ali fast-expt/x0 fast-expt-algo)
+
+(def/va (fast-expt g x [n 1]) ;not for pow
+  (def (_ i)
+    (if~
+      (eq  i 1) x
+      (fx< i 1) (error "n in fast-expt, should be >= 1" i)
+      (letn
+        ( [m (_ (>> i 1))]
+          [y (g m m)] )
+        (if (fxeven? i) y
+          [g y x]
+    ) ) )
+  )
+  (_ n)
+)
 
 (ali mat-unitlen matrix-unitlen)
 (ali mat-unit   matrix-unit)
@@ -3846,7 +3864,7 @@ to-test:
 ; data
 
 (setq *tab/jp/key-a-A* ;Xy: y: a i u e o ;z: n
- '( [  a あ ア][  i い イ][  u う ウ][  e え エ][  o お オ]
+ '( [  a あ ア][  i い イ][  u う ウ][  e え エ][  o お オ] ;ェ
     [ ka か カ][ ki き キ][ ku く ク][ ke け ケ][ ko こ コ] 
     [ sa さ サ][ si し シ][ su す ス][ se せ セ][ so そ ソ] 
     [ ta た タ][chi ち チ][tsu つ ツ][ te て テ][ to と ト] 
@@ -3863,7 +3881,8 @@ to-test:
     [ ba ば バ][ bi び ビ][ bu ぶ ブ][ be べ ベ][ bo ぼ ボ]
     [ pa ぱ パ][ pi ぴ ピ][ pu ぷ プ][ pe ぺ ペ][ po ぽ ポ]
 ) )
-(ali *jp-tab* *tab/jp/key-a-A*)
+;(ali *jp-tab* *tab/jp/key-a-A*)
+(ali *tab/jp* *tab/jp/key-a-A*)
 
 (setq aud/doremi
   '(
