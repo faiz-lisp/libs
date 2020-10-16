@@ -1,10 +1,11 @@
-(define (version) "Chez-lib V1.93")
+(define (version) "Chez-lib V1.94")
 (define (git-url) "https://github.com/faiz-lisp/libs.git")
 
 #|
 # Chez-lib.sc - Written by Faiz
 
   - Update notes:
+    - 1.94: add: self-act (_ pow 3 3) => (pow 3 3 3), rev-calc (_ pow 4) => 2
     - 1.93: fast-expt, (_ g x [n 1])
     - 1.92b my git-url
     - 1.92a change format of notes
@@ -2100,7 +2101,16 @@ to-test:
   (redu~ xor2% [map not xs]) ;not issue when: (xor x)
 )
 
-(def (avg . xs) (/ (redu~ + xs) (len xs)))
+(def (avg . xs)
+  (/ ;
+    (redu~ + xs)
+    (len xs)
+) )
+(def (.avg . xs)
+  (./
+    (redu~ + xs)
+    (len xs)
+) )
 (def %
   (case-lam
     [(x) (inexa(/ x 100))]
@@ -2153,13 +2163,26 @@ to-test:
 ) )
 
 (setq *max-deviation* (- [expt(sqrt 2)2] 2)) ;?
-(setq *max-deviation-ratio* [-(/ (expt(sqrt 2)2) 2)1])
-(def (~= a b)
-  [<= (abs(-(/ a b)1)) *max-deviation-ratio*] ;/
-  ; (let ([cal (if(> a b) call rcall%)])
-    ; [<= (1-(cal / a b)) *max-accuracy-error-ratio*]
-  ; )
+(setq *max-deviation-ratio* ;
+  (/ ;
+    (1-
+      (/
+        (pow (sqrt 2)) ;
+        2
+    ) )
+    2 )
 )
+(def (~= a b)
+  (< ;
+    (abs
+      (1-
+        (/ a b) ;
+    ) )
+    *max-deviation-ratio* ;/
+    ; (let ([cal (if(> a b) call rcall%)])
+      ; [<= (1-(cal / a b)) *max-accuracy-error-ratio*]
+    ; )
+) )
 
 (def distance
   (case-lam
@@ -2197,6 +2220,33 @@ to-test:
   ) ) )
   (_ n nil)
 ) ;(cost(factors 40224510201988069377423))
+
+;(self-act pow num n) => target
+(def/va (self-act f num [n 2]) ;@
+  (def (_ ret i)
+    (if~
+      (eq  i n) ret
+      (fx> i n) (error "n in self-act, should be >= 1" n)
+      [_ (f ret num) (fx1+ i)]
+  ) )
+  (_ num 1)
+)
+
+;(rev-calc pow target) => x
+(def/va (rev-calc f-x tar [= ~=]) ;inexaQ
+  (def (_ nex x pre)
+    (let ([resl (f-x x)]) ;
+      (if~
+        [= resl tar] ;(inexa
+            x ;)
+        [> resl tar]
+          [_ x (avg pre x) pre]
+          [_ nex (avg nex x) x]
+  ) ) )
+  (_ tar 2 0) ;
+)
+
+; end of math
 
 (def_ (infix-prefix% lst) ; need a
   (if (list? lst)
