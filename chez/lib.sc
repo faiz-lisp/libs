@@ -1,19 +1,20 @@
-(define (version) "Chez-lib V1.94")
+(define (version) "Chez-lib V1.95")
 (define (git-url) "https://github.com/faiz-lisp/libs.git")
 
 #|
 # Chez-lib.sc - Written by Faiz
 
   - Update notes:
-    - 1.94: add: self-act (_ pow 3 3) => (pow 3 3 3), rev-calc (_ pow 4) => 2
-    - 1.93: fast-expt, (_ g x [n 1])
-    - 1.92b my git-url
-    - 1.92a change format of notes
-    - 1.92: update api-with: symbol -> macro
+    - 1.95: Add fold (_ f x xs), foldl-n (_ n fn xs), infix->prefix (_ xs)
+    - 1.94: Add: self-act (_ pow 3 3) => (pow 3 3 3), rev-calc (_ pow 4) => 2
+    - 1.93: Simp: fast-expt, (_ g x [n 1])
+    - 1.92b Add my git-url
+    - 1.92a Change format of notes
+    - 1.92: Upd api-with: symbol -> macro
     - 1.91: add logic for dividing vowels in japanese; add T, F;
     - 1.90: Add data of jp, doremi
-    - 1.89: syn -> syt
-    - 1.88: divide-at
+    - 1.89: Word: syn -> syt
+    - 1.88: Add divide-at
 
   - Suffixes:
     - @ slow / bad
@@ -2226,13 +2227,14 @@ to-test:
   (def (_ ret i)
     (if~
       (eq  i n) ret
-      (fx> i n) (error "n in self-act, should be >= 1" n)
-      [_ (f ret num) (fx1+ i)]
+      (fx< i n)
+        [_ (f ret num) (fx1+ i)]
+        (error "n in self-act, should be >= 1" n)
   ) )
   (_ num 1)
 )
 
-;(rev-calc pow target) => x
+;(rev-calc pow target) =(checker)=> x
 (def/va (rev-calc f-x tar [= ~=]) ;inexaQ
   (def (_ nex x pre)
     (let ([resl (f-x x)]) ;
@@ -2248,15 +2250,37 @@ to-test:
 
 ; end of math
 
-(def_ (infix-prefix% lst) ; need a
-  (if (list? lst)
-    (if (null? (cdr lst))
-      (car lst)
-      (list (cadr lst)
-            (_ (car lst))
-            (_ (cddr lst)) ) )
-    lst
+(def (fold g x xs)
+  (redu g (cons x xs)) ;
+)
+
+;(foldl-n n g xs)
+(def (foldl-n n g xs)
+  (let ([n2 (1- n)])
+    (def (_ xs ret i)
+      (if (eq i 0)
+        (fold g ret xs)
+        (_ [list-tail xs n2]
+          (fold g ret [list-head xs n2])
+          (- i n2)
+    ) ) )
+    (_ (cdr xs) (car xs) [- (len xs) n])
 ) )
+
+(def (infix->prefix xs)
+  (def(_ ret xs)
+    (if (nilp xs) ret
+      (if (cdr-nilp xs) [error "xs length not proper" xs] ;infix->prefix] ;
+        (_ (list (car xs) ret [~ (cadr xs)])
+          (cddr xs)
+  ) ) ) )
+  (def (~ x)
+    (if (consp x)
+      (_ [~ (car x)] (cdr x))
+      x
+  ) )
+  (~ xs)
+)
 
 (def (evenp n)
   (fx= (mod n 2) 0)
@@ -2636,15 +2660,16 @@ to-test:
 (def/va (fast-expt g x [n 1]) ;not for pow
   (def (_ i)
     (if~
-      (eq  i 1) x
-      (fx< i 1) (error "n in fast-expt, should be >= 1" i)
+      [eq  i 1] x
+      [fx> i 1]
       (letn
-        ( [m (_ (>> i 1))]
+        ( [m (_ [>> i 1])]
           [y (g m m)] )
         (if (fxeven? i) y
           [g y x]
-    ) ) )
-  )
+      ) )
+      (error "n in fast-expt, should be >= 1" i)
+  ) )
   (_ n)
 )
 
