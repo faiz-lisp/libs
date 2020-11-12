@@ -1,20 +1,22 @@
-(define (version) "Chez-lib V1.95")
+(define (version) "Chez-lib V1.95c")
 (define (git-url) "https://github.com/faiz-lisp/libs.git")
 
 #|
 # Chez-lib.sc - Written by Faiz
 
   - Update notes:
-    - 1.95: Add fold (_ f x xs), foldl-n (_ n fn xs), infix->prefix (_ xs)
-    - 1.94: Add: self-act (_ pow 3 3) => (pow 3 3 3), rev-calc (_ pow 4) => 2
+    - 1.95c Upd : ./
+    - 1.95a Cancel (ali ? if) for match
+    - 1.95: Add : fold (_ f x xs), foldl-n (_ n fn xs), infix->prefix (_ xs)
+    - 1.94: Add : self-act (_ pow 3 3) => (pow 3 3 3), rev-calc (_ pow 4) => 2
     - 1.93: Simp: fast-expt, (_ g x [n 1])
-    - 1.92b Add my git-url
-    - 1.92a Change format of notes
-    - 1.92: Upd api-with: symbol -> macro
-    - 1.91: add logic for dividing vowels in japanese; add T, F;
-    - 1.90: Add data of jp, doremi
+    - 1.92b Add : my git-url
+    - 1.92a Chg : format of notes
+    - 1.92: Upd : api-with: symbol -> macro
+    - 1.91: add : logic for dividing vowels in japanese; add T, F;
+    - 1.90: Add : data of jp, doremi
     - 1.89: Word: syn -> syt
-    - 1.88: Add divide-at
+    - 1.88: Add : divide-at
 
   - Suffixes:
     - @ slow / bad
@@ -205,6 +207,14 @@
 (alias lis->vec list->vector)
 (alias vec-len  vector-length)
 
+; shorthands
+
+(ali list->str  list->string)
+(ali str->sym   string->symbol)
+(ali str->chs   string->list)
+
+;
+
 (def-syt def ;ine*
   (syt-ruls ()
     ([_ x] (def x *v))
@@ -237,7 +247,7 @@
 (alias eql   equal?)
 (alias ==    equal?)
 (alias ?: if)
-(alias ?  if)
+;(alias ?  if)
 (alias !  not)
 (alias sym?   symbol?)
 (alias bool?  boolean?)
@@ -309,7 +319,7 @@
           ...
 ) ) ) ) )
 (ali def-syn def-syt)
-(ali defsyn defsyt)
+(ali defsyn  defsyt)
 
 (def-syt (if% stx)
   (syt-case stx (else)
@@ -640,7 +650,6 @@
               n-head num-not-defa n-tail
 ) ) ) ) ) ) )
 ;We may def func again with some defa paras, and test the func with just one variable para.
-
 
 (defsyt defn/values%
   ([_ f (p ... q) (V ... Q) ret ...]
@@ -1164,11 +1173,10 @@ to-test:
 (alias str-upcase   string-upcase)
 (alias str-downcase string-downcase)
 
-(defn swap-para (g)
+(def (swap-para g) ;@ ;rev
   (lam xs
-    (redu g (rev xs)) ;!?
+    (redu g (rev xs))
 ) )
-
 
 ; (defsyt cons~
   ; ([_ xs ...] ;[_ 1 2 3 '(4)] ~> [~ '(4) 3 2 1]
@@ -1380,7 +1388,7 @@ to-test:
 (defn longest xz ;(longest '(1 2) '() '(2 3)) ~> '(2 3)?
   (most
     [lam (l r)
-      (? [len-cmp > l r] l r) ]
+      (if [len-cmp > l r] l r) ]
     xz
 ) )
 
@@ -2118,9 +2126,11 @@ to-test:
     [(x . ys) (foldl mod x ys)]
 ) )
 
-(def ./@ (compose exa->inexa /))
-; (def (./ . nums)
-  ; (exa->inexa (redu / nums))
+(def (./ . xs)
+  (foldl / (inexact [car xs]) (cdr xs))
+)
+; (def (.* . xs)
+  ; (foldl * (inexact [car xs]) (cdr xs))
 ; )
 (def .* (compose exa->inexa *))
 
@@ -2277,7 +2287,7 @@ to-test:
   (def (~ x)
     (if (consp x)
       (_ [~ (car x)] (cdr x))
-      x
+      x ;nump ign, record
   ) )
   (~ xs)
 )
@@ -3676,7 +3686,7 @@ to-test:
 ;Code written by Oleg Kiselyov
 
 (def-syt ppat ;ppattern for ?
-  (syt-ruls (? comma unquote quote) ;comma for unquo?
+  (syt-ruls (if comma unquote quote) ;comma for unquo?
     ([_ v ? kt kf] kt)
     ([_ v () kt kf] (if (nilp v) kt kf))
     ((_ v (quote lit) kt kf) (if (equal? v (quote lit)) kt kf)) ;x?
@@ -3804,7 +3814,7 @@ to-test:
     ([xs ys]
       (with-head? xs ys eql)
 ) ) )
-(def with?
+(def with? ;may need algo
   (case-lam
     ( [xs ys eql] ;(_ '(1 2 3 4) '(2 3/4)) ;-> Y/N ;with/contain
       (def (_ xs)
@@ -3956,7 +3966,6 @@ to-test:
     [ ba ば バ][ bi び ビ][ bu ぶ ブ][ be べ ベ][ bo ぼ ボ]
     [ pa ぱ パ][ pi ぴ ピ][ pu ぷ プ][ pe ぺ ペ][ po ぽ ポ]
 ) )
-;(ali *jp-tab* *tab/jp/key-a-A*)
 (ali *tab/jp* *tab/jp/key-a-A*)
 
 (setq aud/doremi
@@ -3967,24 +3976,26 @@ to-test:
 
 ; logic for data
 
-(def (jp/prono-divide prono) ;pronounce: hi ra ga na->ひらがな
-  (let ( [vowels '(#\a #\i #\u #\e #\o )]
-      [spec  #\n] )
+(def (jp/prono-divide prono) ;pronounce: hi ra ga na->ひらがな ;saranghae X:gha
+  (let
+    ( [vowels '(#\a #\i #\u #\e #\o)]
+      [spec  #\n] ) ;
     (def (~ cs ret tmp flg) ;aft-n
-      (if (nilp cs) (cons tmp ret)
+      (if (nilp cs)
+        (cons tmp ret)
         (letn ( [a (car cs)] [d (cdr cs)]
             [a.tmp (cons a tmp)] ) ;
           (if~
             (mem? a vowels)
-              [~ d (cons a.tmp ret) nil Fal]
+              [~ d (cons a.tmp ret) nil F]
             flg
-              [~ d (cons tmp ret) (cons a nil) Fal]
+              [~ d (cons tmp ret) (cons a nil) F]
             (eq a spec)
-              [~ d ret a.tmp Tru]
-            [~ d ret a.tmp Fal]
+              [~ d ret a.tmp T]
+            [~ d ret a.tmp F]
     ) ) ) )
     (map chs->sym
-      (deep-reverse [~ (sym->chs prono) nil nil Fal]) ;
+      (deep-reverse [~ (sym->chs prono) nil nil F]) ;
 ) ) )
 
 ;
