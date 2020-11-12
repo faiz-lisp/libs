@@ -1,10 +1,11 @@
-(define (version) "Chez-lib V1.95c")
+(define (version) "Chez-lib V1.96")
 (define (git-url) "https://github.com/faiz-lisp/libs.git")
 
 #|
 # Chez-lib.sc - Written by Faiz
 
   - Update notes:
+    - 1.96: Add : def/doc, (doc myfunc1), docs
     - 1.95c Upd : ./
     - 1.95a Cancel (ali ? if) for match
     - 1.95: Add : fold (_ f x xs), foldl-n (_ n fn xs), infix->prefix (_ xs)
@@ -23,7 +24,7 @@
     - % theoretic / internal / paras->list
     - ~ just faster
     - * optimized
-    - ! with side-effect
+    - ! (forced and) with side-effect
 
   - prefixes:
     - sy/ syt/ for syntax
@@ -215,10 +216,11 @@
 
 ;
 
+;TODO (def (asd) "usage: (asd)~>123" 123) (doc asd)~>"usage..." ;(car body) if-is string, save to (doc)
 (def-syt def ;ine*
   (syt-ruls ()
     ([_ x] (def x *v))
-    ([_ (g . args) body ...]
+    ([_ (g . args) body ...] ;
       (define (g . args) body ...) )
     ([_ x e] (define x e)) ;sym? e: e *v
     ; ;The followings make def slow:
@@ -1510,6 +1512,8 @@ to-test:
           (set-cdr! (last-pair xs) (li args ...)) ;let ([xs xs]) ?
           (return xs)
 ) ) ) ) )
+
+
 
 ;(list-replace '(#\a #\~ #\d #\x) '(#\~ #\d) '(#\1 #\2 #\3) 1)
 ;(list-replace '(#\a #\~ #\d #\x #\~ #\d) '(#\~ #\d) '(#\1 #\2 #\3))
@@ -2958,6 +2962,7 @@ to-test:
   (_ x 1)
 )
 
+(alias exception? condition?)
 (alias try-fail? condition?)
 (ali bad-try? condition?)
 (def (full-eval x) ;
@@ -2970,6 +2975,8 @@ to-test:
   (_ x)
 )
 (alias ev-full full-eval)
+
+
 
 ; (defsyt lam-snest
   ; ([x] nil)
@@ -3418,6 +3425,101 @@ to-test:
   ([_ exp]
     (guard (x (els x)) exp) ;(condition? #condition) -> *t
 ) )
+
+
+; htab 1/2
+
+;(mk-htab htab (list ))
+(defsyt mk-htab ;!
+  ([_ var init] ;key-eq?]
+    (if (exception? (try var))
+      (setq var init)
+      nil ;(error "existed" 'var)
+) ) )
+
+;(add-to-htab htab (list key value))
+(defsyt add-to-htab
+  ( [_ ht child] ;!
+    (let ([key (car child)])
+      (if (! (htab/key-exist? key ht))
+        (rpush child ht) ;
+        (error "existed" key)
+) ) ) )
+(defsyt add-to-htab!
+  ( [_ ht child]
+    (let ([key (car child)])
+      (def (_ ht)
+        (if (cdr-nilp ht)
+          (set-cdr! ht (list child)) ;
+          (if (eq key (caar ht))
+            (set-car! ht child) ;
+            [_ (cdr ht)]
+      ) ) )
+      (if (nilp ht)
+        (setq ht (list child)) ;
+        [_ ht]
+) ) ) )
+
+
+; doc for documentable
+
+;(def/doc (asd) "usage: (asd)~>123" 123) (doc asd)~>"usage..."
+
+(mk-htab *htab/fn-doc* nil)
+
+;(car body) if-is string, save to (doc)
+(def-syt def/doc
+  (syt-ruls ()
+    ( [_ x] (def x *v))
+    ( [_ (g . args) doc body ...]
+      (bgn ;
+        (add-to-htab! *htab/fn-doc* '(g doc)) ;
+        (define (g . args) body ...)
+    ) )
+    ( [_ x doc e]
+    
+      (define x e) )
+    ( [_ x e]
+      (define x e)
+) ) )
+
+(defsyt doc ;
+  ( [_ key]
+    ;if fn? key
+    (get-htab-value *htab/fn-doc* 'key) ;
+  )
+  ( [_ key htab]
+    (get-htab-value htab 'key) ;
+) )
+
+(def/va (docs [ht *htab/fn-doc*]) ;
+  ht
+)
+
+
+; htab 2 for hashtable
+
+(def (htab/key-exist? key ht)
+  (def (_ ht)
+    (if (nilp ht) F
+      (if (eq key (caar ht)) T
+        [_ (cdr ht)]
+  ) ) )
+  (_ ht)
+)
+
+(def (get-htab-value ht key)
+  (def (_ ht)
+    (if (nilp ht) nil
+      (if (eq key (caar ht))
+        (cadar ht)
+        [_ (cdr ht)]
+  ) ) )
+  (_ ht)
+)
+;(find-htab-key htab value  [eql])
+;(find-htab-keys htab value [eql])
+
 
 (defn_ exist-cond? (g x xs)
   (if (nilp xs) *f ;<-nil
