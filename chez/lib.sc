@@ -1,10 +1,11 @@
-(define (version) "Chez-lib V1.96")
+(define (version) "Chez-lib V1.96z")
 (define (git-url) "https://github.com/faiz-lisp/libs.git")
 
 #|
 # Chez-lib.sc - Written by Faiz
 
   - Update notes:
+    - 1.96z Upd : def/doc, doc; Added doc-paras;
     - 1.96: Add : def/doc, (doc myfunc1), docs
     - 1.95c Upd : ./
     - 1.95a Cancel (ali ? if) for match
@@ -185,6 +186,8 @@
 ;#%car = ($primitive car) = ($primitive 1 car) = car
 ;#%car = ($primitive car) = ($primitive 1 car) = car
 
+;================= alias and defsyt ===================
+
 (alias ali      alias)
 (alias imp      import)
 (alias lam      lambda)
@@ -214,12 +217,11 @@
 (ali str->sym   string->symbol)
 (ali str->chs   string->list)
 
-;
 
 ;TODO (def (asd) "usage: (asd)~>123" 123) (doc asd)~>"usage..." ;(car body) if-is string, save to (doc)
-(def-syt def ;ine*
+(def-syt define*
   (syt-ruls ()
-    ([_ x] (def x *v))
+    ([_ x] (define x *v)) ;
     ([_ (g . args) body ...] ;
       (define (g . args) body ...) )
     ([_ x e] (define x e)) ;sym? e: e *v
@@ -427,39 +429,7 @@
     ( [_ . xz]
       #'(append . xz)
 ) ) )
-(def append!.ori append!) ;
-(def (append! xs . yz) ;?
-  (def (_ xs yz)
-    (if (nilp yz) xs
-      (if (nilp xs)
-        (append!% xs [_ (car yz) (cdr yz)]) ;
-        (bgn
-          (set-cdr! (last-pair xs) [_ (car yz) (cdr yz)])
-          xs
-  ) ) ) )
-  (_ xs [remov-nil yz]) ;when to ys/cons/append!/set-cdr!
-)
 
-(def (curry g . args) ;curry(0~)2
-  (lam xs
-    (redu g ;
-      (append~ args xs)
-) ) )
-(def (rcurry g . args)
-  (lam xs
-    (redu g
-      (append~ xs args)
-) ) )
-(def (curry~ g . args)
-  (lam xs
-    (redu~ g ;
-      (append~ args xs)
-) ) )
-(def (rcurry~ g . args)
-  (lam xs
-    (redu~ g
-      (append~ xs args)
-) ) )
 
 
 (defsyt cacc ;
@@ -472,83 +442,11 @@
 
 ;
 
-(def    *f   #f)
-(def    *t   #t)
-(def    *v   (void))
-(def    *e   '[(err)]) ;
-(def    nil  '()) ;
-(def    T    #t)
-(def    F    #f)
-(def    No   *f)
-(def    Yes  *t)
-(def    spc  " ")
-(def    Void *v)
-(def    Err  *v) ;
-(define Tru  *t)
-(define Fal  *f)
-
-(def void? (curry eq *v))
-(def (str/pair? x) [or(string? x)(pair? x)]) ;x
-(def (str/pair/vec? x) [or(string? x)(pair? x)(vector? x)]) ;for eql/eq
-
-(def (id x) x)
 (alias identity id)
 (alias li list)
+
 (ali str->list string->list)
-
-(def car.ori car)
-(def cdr.ori cdr)
-(def (car% xs)
-  (if (atomp xs) Err
-    (car xs) ;.ori
-) )
-(def (cdr% xs)
-  (if (atomp xs) Err
-    (cdr xs)
-) )
-
-;
-
-(def (display* . xs)
-  (def (_ xs)
-    (if (nilp xs) *v
-      (bgn
-        (display (car xs)) ;write/pretty-print/display/?
-        [_ (cdr xs)]
-  ) ) )
-  ;(if *will-disp*
-    (_ xs)
-) ;)
 (alias disp display*)
-
-(def (ok? x)
-  (if [or (nilp x) (fal? x)] Fal
-    Tru
-) )
-
-(def [please-return!] (setq *will-ret* Tru))
-(def [dont-return!]   (setq *will-ret* Fal))
-
-(def (return x)
-  (if *will-ret* x
-    (if (ok? x) 'OK
-      'FAIL
-) ) ) ;DONE->OK FAIL
-
-(def (set-alp! pr x)
-  (set-car! (last-pair pr) x)
-)
-(def (set-dlp! pr x)
-  (set-cdr! (last-pair pr) x)
-)
-
-;
-
-(defn conz (xs . ys)
-  (if (nilp ys) xs
-    (append xs ys) ;! a a -> cycle
-) )
-;(alias conj conz)
 
 (defsyt sy/num-not-defa-vals%
   ([_ () n] n)
@@ -560,41 +458,6 @@
 (defsyt sy/num-not-defa-vals ;good for: (_ a [b 1] c)
   ([_ . xs] (sy/num-not-defa-vals% xs 0))
 )
-
-;(_ '(a [b 2] [c])) ;-> 2
-(defn num-not-defa-vals (paras)
-  (def (_ paras n)
-    (if (nilp paras) n
-      (let ([a (car paras)][d (cdr paras)])
-        (if (consp a) ;
-          (if (nilp (cdr a)) ;<-atomp
-            [_ d (1+ n)]
-            [_ d n] )
-          [_ d (1+ n)]
-  ) ) ) )
-  (_ paras 0)
-)
-
-(def (list-elements xs) ;(_ '(a (b) (c 1) d)) ~> '((a) (b) (c 1) (d))
-  (def (_ xs)
-    (if (nilp xs) nil
-      (let ([a (car xs)])
-        (if (sym? a) ;consp lisp sym?
-          (cons (li a) [_ (cdr xs)])
-          (cons a [_ (cdr xs)]) ;
-  ) ) ) )
-  (_ xs)
-)
-(def (list-the-front xs) ;partly ;(_ '(a (b) (c 1) d)) ~> '((a) (b) (c 1) (d)) ~> '((a) (b) (c 1) (d nil))
-  (def (_ xs)
-    (if (nilp xs) nil
-      (let ([a (car xs)])
-        (if (sym? a) ;consp lisp sym? ?
-          (cons (li a) [_ (cdr xs)]) ;
-          xs ;
-  ) ) ) )
-  (_ xs)
-)
 (defsyt sy/list-the-front ;
   ( [_ ()] '())
   ( [_ ((x ...) . xs)] '((x ...) . xs))
@@ -602,39 +465,6 @@
   ( [_ (x . xs)]
     (cons '(x) [sy/list-the-front xs]) ;
 ) )
-
-; (def (defa->vals/aux paras vals nths-defa-part nths-not-defa nths-defa-rest) ;
-  ; (def (_ paras vals n-head n-ndefa n-tail ret)
-    ; (if (nilp paras)  ret ;
-      ; (let ([ev-cadr (lam (xs) [ev(cadr xs)])])
-        ; (if (nilp vals)
-          ; [_ nil nil 0 0 0 [append~ (rev ret) (map ev-cadr paras)]] ;
-          ; (letn ([a (car paras)] [d (cdr paras)])
-            ; (if (cdr-nilp a)
-              ; (cons (car vals) [_ d (cdr vals) n-head (1- n-ndefa) n-tail ret]) ;
-              ; (if (<1 n-head)
-                ; [_ d vals 0 n-ndefa (1- n-tail) (cons(ev[cadr a])ret)] ;
-                ; (cons (car vals) [_ d (cdr vals) (1- n-head) n-ndefa n-tail ret]) ;
-  ; ) ) ) ) ) ) )
-  ; [_ paras vals nths-defa-part nths-not-defa nths-defa-rest nil]
-; )
-(def (defa->vals/aux paras vals numof-defa-vals numof-not-defa numof-defa-rest) ;@
-  (def (_ paras vals n-head n-ndefa n-tail ret)
-    (if (nilp paras) (rev ret)
-      (let ([ev-cadr (lam (xs) [ev(cadr xs)])])
-        (if (nilp vals)
-          [append~ (rev ret) (map ev-cadr paras)] ;ev for eg: nil->'()
-          (let ([a (car paras)] [d (cdr paras)])
-            (if (cdr-nilp a) ;not-defa
-              [_ d (cdr vals) n-head (1- n-ndefa) n-tail (cons (car vals) ret)]
-              (if (<1 n-head) 
-                [_ d vals 0 n-ndefa (1- n-tail) (cons (ev-cadr a) ret) ] ;
-                [_ d (cdr vals) (1- n-head) n-ndefa n-tail (cons (car vals) ret)]
-  ) ) ) ) ) ) )
-  [_ paras vals numof-defa-vals numof-not-defa numof-defa-rest nil]
-)
-;(defa->vals/aux% '((a)(b 3)(c)) '(2 4) 0 2 1) -> '(2 3 4)
-
 ;(call-with-values (lam()(values 'a 'b vc)) g) ;
 (defsyt def/defa@ ;@ (_ (g [a] [b 2] [c ]) (+ a b c)) ;test on fib0 found some issue
   ( [_ (g . paras) body ...] (def/defa@ g paras body ...))
@@ -774,13 +604,6 @@ to-test:
 (ali def/defa def/va)
 ;test: (def/va (sublis xs [s 0] n) [head(tail xs s)n]) (sublis '(1 2 3) 2)
 
-;common
-
-(def (redu~/fold g xs) ;-> curry/compose~ ;elements of xs must be simular
-  (if (nilp xs) (g)
-    (foldl g (car xs) (cdr xs)) ;wrong sometimes: values map echo ;echo ~> '(*v) ;evs ;i/o
-) ) ;curry?
-
 (def-syt vec-for ;
   (syt-ruls (in)
     ( [_ i in ve body ...]
@@ -887,6 +710,844 @@ to-test:
 (defm (sy-redu g (x ...))
   (g x ...)
 )
+;
+
+
+;sy-
+
+(defsyt sy-rev% ;
+  ([_ () (ret ...)] '(ret ...)) ;
+  ([_ (x) (ret ...)]
+    '(x ret ...) )
+  ([_ (x ys ...) (ret ...)]
+    (sy-rev% [ys ...] [x ret ...]) )
+)
+(defsyt sy-rev
+  ([_ (xs ...)]
+    [sy-rev% (xs ...) ()] )
+  ([_ xs ...]
+    [sy-rev% (xs ...) ()] )
+)
+
+(defsyt lam-nest% ;(_ (a b) bd...) -> [lam(a)[lam(b) bd...]]
+  ([_ () (ret ...)]
+    [ret ...] )
+  ([_ (x) (ret ...)]
+    [lam(x) [ret ...]] )
+  ([_ (x ys ...) (ret ...)]
+    [lam(x) (lam-nest% (ys ...) [ret ...])] ) ;
+)
+(defsyt lam-rnest%
+  ([_ () (ret ...)]
+    [ret ...] )
+  ([_ (x) (ret ...)]
+    [lam(x) [ret ...]] )
+  ([_ (x ys ...) (ret ...)]
+    (lam-rnest% (ys ...) [lam(x) [ret ...]]) )
+)
+
+(defsyt lam-rnest
+  ([_ (xs ...) bd ...]
+    [lam-rnest% (xs ...) [lam() bd ...]] )
+)
+(defsyt lam-srnest
+  ([_ (xs ...) bd ...]
+    [lam-rnest% (xs ...) (bgn bd ...)] )
+)
+(defsyt lam-nest
+  ([_ (xs ...) bd ...]
+    [lam-nest% (xs ...) [lam() bd ...]] )
+)
+(defsyt lam-snest
+  ([_ (xs ...) bd ...]
+    [lam-nest% (xs ...) [bgn bd ...]] )
+)
+
+(ali && and)
+(ali || or)
+
+(ali & bitwise-and)
+
+(alias todo quiet)
+(alias tofix id)
+(alias ?~ if*)
+(alias str-upcase   string-upcase)
+(alias str-downcase string-downcase)
+(ali nth-of nth-of-x)
+(ali find-x-meet find-x-match)
+(alias list/nth list/nth-)
+(defsyt set-xth!% ;chg-nth
+  ( [_ xs i y]
+    (letn [ (n (fx1+ i))
+            (m (1- i))
+            (ln (len xs))
+            (pre (ncdr xs (- m ln -1))) ;
+            (pos (ncdr xs n)) ]
+      (set! xs (append pre (cons y pos)) ) ;
+) ) )
+(defsyt set-xth! ;chg-nth
+  ( [_ xs i y]
+    (letn [ (n (fx1+ i))
+            (m (1- i))
+            (ln (len xs))
+            (pre (ncdr xs (- m ln -1))) ;
+            (pos (ncdr xs n)) ] ;
+      (set! xs (append! pre (cons y pos)) ) ;!
+) ) )
+(defsyt set-nth!
+  ([_ xs n y] (set-xth! xs (1- n) y))
+)
+
+(defsyt insert-xth!
+  ([_ xs i y]
+    (letn([pre (head xs i)]
+          [pos (tail xs i)])
+      (setq xs (append! pre (cons y pos)))
+) ) )
+
+(defsyt swap-xths!
+  ( [_ xs i j]
+    (let ([t (nth xs i)])
+      (set-xth! xs i (nth xs j))
+      (set-xth! xs j t)
+  ) )
+  ( [_ xs i ys j]
+    (let ([t (nth xs i)])
+      (set-xth! xs i (nth ys j))
+      (set-xth! ys j t)
+) ) )
+(defsyt swap-nths!
+  ( (_ xs m n)
+    (swap-xths! xs (1- m) (1- n)) )
+  ( (_ xs m ys n)
+    (swap-xths! xs (1- m) ys (1- n)) )
+)
+
+
+(def-syt (pop stx)
+  (syt-case stx ()
+    ( [_ xs]
+      [identifier? #'xs]
+      #'(setq xs (cdr xs)) )
+    ( [_ xs]
+      #'(car xs) )
+) )
+
+(def-syt (push stx)
+  (syt-case stx () ;
+    ([_ args ... x]
+      (identifier? #'x) ;
+      #'(setq x (cons* args ... x)) ) ;
+    ([_ . args]
+      #'(cons* . args)
+) ) )
+
+; to make return similar to bgn/values, with multiple input values
+
+(def-syt (rpush stx)
+  (syt-case stx ()
+    ([_ args ... xs]
+      (identifier? #'xs)
+      #'(bgn
+        (if [nilp xs]
+          (setq xs (li args ...))
+          (set-cdr! (last-pair xs) (li args ...)) ) ;
+        (return xs)
+    ) ) ;
+    ([_ args ... xs]
+      #'(if [nilp xs]
+        (setq xs (li args ...)) ;
+        (bgn
+          (set-cdr! (last-pair xs) (li args ...)) ;let ([xs xs]) ?
+          (return xs)
+) ) ) ) )
+
+
+(defsyt type-main ;todo detail for printf
+  ( [_ x]
+    (cond
+      ;((ffi-s? (any->str 'x))  "ffi") ;x if not sym
+      ((sym?  x)      "symbol") ;
+      ((bool? x)      "boolean")
+      ((num?  x)      "number") ;
+      ((char? x)      "char") ;
+      ((str?  x)      "string") ;
+      ((nil?  x)      "null")
+      ((list? x)     "list") ;
+      ((pair? x)      "pair")
+      ;((ffi?  x)      "ffi") ;
+      ((fn?   x)      "fn") ;procedure
+      ((vector? x)    "vector") ;
+      ((void? x)      "void")
+      ((atom? x)      "other-atom") ;(eof-object) ;x (void) #err
+      (else           "other")  ;other-atoms
+) ) )
+(alias ty type-main)
+(defm (raw . xs) ;(raw 1))
+  (if~
+    (nilp 'xs) nil
+    (cdr-nilp 'xs) (car 'xs)
+    'xs
+) )
+(alias lis2num list->num)
+(ali xn->list xn-mk-list)
+(alias readexp read-expr)
+;cl
+
+(alias atom atom?)
+(alias null null?)
+(alias second cadr)
+
+(defsyt getf
+  ((_ xs xtag)
+    (if (<(len xs)2) nil
+      (if (eq (car xs) 'xtag)
+        (cadr xs)
+        (ev `(getf (cddr xs) xtag)) ;
+) ) ) )
+
+(defsyt getf-xth-iter
+  ((_ x f1 i)
+    (if (<(len x)2) nil ;
+      (if (eq (car x) 'f1)
+        (fx1+ i)
+        (ev `(getf-xth-iter (cddr x) f1 (+ 2 i)))
+) ) ) )
+(defsyt getf-xth
+  ((_ x f1)
+    (getf-xth-iter x f1 0)
+) )
+(defsyt setf* ;(_ mapA tagX a)
+  ((_ x f1 a)
+    (letn [ (i (getf-xth x f1)) ]
+      (if (nilp i) (if *will-ret* x nil)
+        (set-xth! x i a)
+) ) ) )
+(alias aref list-ref) ;
+
+;oth
+(alias op-inp-str open-input-string)
+(alias str->ss str-explode)
+
+
+;C
+
+
+(alias ref list-ref)
+;lisp use quo and defsyt, instead of get-addr in c
+(defsyt swap
+  ( [_ a b]
+    (if (eql a b)
+      nil
+      (let ([t a])
+        (setq a b  b t)
+    ) )
+    (li a b)
+) )
+
+(alias rev! reverse!)
+(alias d-len deep-length) ;d-cnt
+(defm (assert resl test)
+  (letn ([tmp resl] [b(eql tmp test)]
+      [ret(if b 'Ok 'Wrong!!)] [ss `(resl " expect " test " ---> " ,ret)] )
+    (redu echo ss) ;
+    (newln)
+) )
+(alias =0 =0?)
+(alias =1 =1?)
+(alias len0 len0?)
+(alias quot quotient)
+(alias permu permutation)
+(ali d-rev deep-reverse)
+
+;onlisp
+
+(def-syt [nreverse! stx]
+  (syntax-case stx ()
+    ([_ xs]
+      [identifier? #'xs]
+      #'(let ([tmp (rev xs)])
+        (set! xs (li(car xs)))
+        tmp
+    ) )
+    ([_ xs]
+      #'(rev xs) )
+) )
+
+(ali list-divide-per group)
+(ali map-all map-for-combinations)
+
+(ali fast-expt/x0 fast-expt-algo)
+;
+
+(ali list-include flat-list-include)
+;
+
+(ali str-replace string-replace*)
+
+
+
+(alias != not=)
+(alias >> bitwise-arithmetic-shift-right)
+(alias << bitwise-arithmetic-shift-left)
+(alias inexa inexact)
+(ali nbits n-digits)
+(ali mat-unitlen matrix-unitlen)
+(ali mat-unit   matrix-unit)
+(ali mat-unitof matrix-unitof)
+(ali mat-mul matrix-mul)
+(ali mat-pow matrix-pow)
+(ali lis2mat group) ;(lis2mat '(1 2 3 4 5) 2) -> ((1 2) (3 4) (5 0))?
+; (def (_ xs)
+  ; (if (<= (len xs) per) ;
+    ; (li xs)
+    ; (cons (head xs per) [_ (tail xs per)]) ;
+; ) )
+(ali mat2lis flat)
+
+(ali mat-ref xth)
+(ali mat-1Muln pt-mat-mul)
+(ali mat-nMuln mat-mat-mul)
+(alias relu ReLU)
+(alias diagonalength diagonal-length)
+(defm (quine g) `(,'g ,'g))
+(alias exception? condition?)
+(alias try-fail? condition?)
+(ali bad-try? condition?)
+(alias ev-full full-eval)
+
+
+(alias float inexact)
+
+(alias num->bump-g num->rbump-g)
+(alias num->bump num->rbump)
+
+
+;vec@: mk-vec n; vec-fill!; vec-set! v i x;
+
+(ali vec-len  vector-length)
+(ali mk-vec   make-vector)
+(ali vec-copy vector-copy)
+(ali vec-set-fnum! vector-set-fixnum!)
+(ali vec-set! vector-set-fixnum!)
+(ali vecar    vec-car)
+
+(def-syt (ve-push* stx)
+  (syt-case stx () ;
+    ( [_ args ... x]
+      (identifier? #'x) ;
+      #'[setq x (ve-cons* args ... x)] ) ;mk-vec will slower than list's
+    ( [_ . args]
+      #'(ve-cons* . args)
+) ) )
+
+(alias vnilp vec-nilp)
+
+(alias vecons vec-cons)
+
+(alias veconz vec-conz)
+
+(alias vecdr vec-cdr)
+
+;
+
+(defsyt try
+  ([_ exp]
+    (guard (x (else x)) exp) ;(exception? #condition) -> *t
+) )
+
+
+
+; htab 1/2
+
+;(mk-htab htab (list ))
+(defsyt mk-htab ;!
+  ([_ var init] ;key-eq?]
+    (if (exception? (try var))
+      (setq var init)
+      nil ;(error "existed" 'var)
+) ) )
+
+;(add-to-htab htab (list key value))
+(defsyt add-to-htab
+  ( [_ ht child] ;!
+    (let ([key (car child)])
+      (if (! (htab/key-exist? key ht))
+        (rpush child ht) ;
+        (error "existed" key)
+) ) ) )
+
+(defsyt add-to-htab!
+  ( [_ ht child]
+    (let ([key (car child)])
+      (def (_ ht) ;
+        (if (eq key (caar ht))
+          (set-car! ht child) ;
+          (if (cdr-nilp ht)
+            (set-cdr! ht (list child)) ;
+            [_ (cdr ht)]
+      ) ) )
+      (if (nilp ht)
+        (setq ht (list child)) ;
+        [_ ht]
+) ) ) )
+
+;(car body) if-is string, save to (doc)
+(def-syt def/doc
+  (syt-ruls ()
+    ( [_ x] (define x *v) ) ;
+    
+    ;(def/doc (f-asd) "f-asd usage: ..." 123)
+    ;(def/doc (asd a) 'doc (list a)) (doc asd)~>(asd a)
+    ; ( [_ (g . args) doc body ...]
+      ; (bgn
+        ; (if ;[and (!(exception? (try doc)))
+          ; [str? doc]
+          ; (add-to-htab! *htab/fn-doc* '(g doc))
+          ; (add-to-htab! *htab/fn-doc* `(g ,[raw (g . args)])) )
+        ; (define (g . args) body ...)
+    ; ) )
+    ( [_ (g . args) body ...]
+      (begin ;
+        ;(add-to-htab! *htab/fn-args* `,[raw (g . args)]) ;
+        (add-to-htab! *htab/fn-args* `,[raw (g (lam args body ...))]) ;
+        (define (g . args) body ...)
+    ) )    
+    ;(def/doc (asd a) (list a)) (doc asd) ~> (asd a) ~> (lam (a) ...)
+    
+    ; ( [_ x doc e]    
+      ; (define x e) )
+    ( [_ x e]
+      (begin
+        (add-to-htab! *htab/fn-args* `,[raw (x e)])
+        (define x e) ;(def& x e last-action?)
+) ) ) )
+;doc-code doc-paras
+
+(ali def define*)
+;(ali def def/doc) ;out of memory
+
+;(doc f-asd)
+(defsyt doc-paras
+  ( [_ key] ;if fn? key
+    (doc-paras% ;<- get-htab-value
+      (if (htab/fn-args?) *htab/fn-args* *htab/fn-doc*)
+      'key
+  ) )
+  ( [_ key htab]
+    (doc-paras% htab 'key) ;<- doc%
+) )
+
+(defsyt doc-code ;
+  ( [_ key] ;if fn? key
+    (get-htab-value ;<- get-htab-value
+      (if (htab/fn-args?) *htab/fn-args* *htab/fn-doc*)
+      'key
+  ) )
+  ( [_ key htab]
+    (get-htab-value htab 'key) ;<- doc%
+) )
+
+(ali doc doc-code)
+
+
+; pattern matching
+
+(define-syntax list-match
+  (syntax-rules ()
+    ((_ expr (pattern fender ... template) ...)
+      (let ((obj expr))
+        (cond ((list-match-aux obj pattern fender ...
+                (list template)) => car) ...
+              (else (error 'list-match "pattern failure")))))))
+
+(define-syntax list-match-aux
+  (lambda (stx)
+    (define (underscore? x)
+      (and (identifier? x) (free-identifier=? x (syntax _))))
+    (syntax-case stx (quote quasiquote)
+      ((_ obj pattern template)
+        (syntax (list-match-aux obj pattern #t template)))
+      ((_ obj () fender template)
+        (syntax (and (null? obj) fender template)))
+      ((_ obj underscore fender template)
+        (underscore? (syntax underscore))
+        (syntax (and fender template)))
+      ((_ obj var fender template)
+        (identifier? (syntax var))
+        (syntax (let ((var obj)) (and fender template))))
+      ((_ obj (quote datum) fender template)
+        (syntax (and (equal? obj (quote datum)) fender template)))
+      ((_ obj (quasiquote datum) fender template)
+        (syntax (and (equal? obj (quasiquote datum)) fender template)))
+      ((_ obj (kar . kdr) fender template)
+        (syntax (and (pair? obj)
+                (let ((kar-obj (car obj)) (kdr-obj (cdr obj)))
+                  (list-match-aux kar-obj kar
+                        (list-match-aux kdr-obj kdr fender template))))))
+      ((_ obj const fender template)
+        (syntax (and (equal? obj const) fender template))))))
+
+(defsyt cost
+  ( [_ g]
+    (let ([t 0] [res nil])
+      (echol (fmt ": ~s" 'g))
+      ;(set! t (clock))
+      (set! t (get-ms))
+      (set! res g)
+      ;(set! t (inexa(/ (-(clock)t) CLOCKS_PER_SEC)))
+      (set! t (-(get-ms)t))
+      ;(echol ": elapse =" t "s")
+      (echol ": elapse =" t "ms")
+      (li res t)
+) ) )
+(defsyt elapse ;just elapse but result
+  ( [_ g]
+    (let ([t 0])
+      (echol (fmt ": ~s" 'g))
+      ;(set! t (clock))
+      (set! t (get-ms))
+      g
+      ;(set! t (inexa(/ (-(clock)t) CLOCKS_PER_SEC)))
+      (set! t (-(get-ms)t))
+      (echol ": elapse =" t "ms")
+      t
+) ) )
+
+
+;Code written by Oleg Kiselyov
+
+(def-syt ppat ;ppattern for ?
+  (syt-ruls (if comma unquote quote) ;comma for unquo?
+    ([_ v ? kt kf] kt)
+    ([_ v () kt kf] (if (nilp v) kt kf))
+    ((_ v (quote lit) kt kf) (if (equal? v (quote lit)) kt kf)) ;x?
+    ([_ v (unquote var) kt kf] (let ([var v]) kt))
+    ([_ v (x . y) kt kf]
+      (if (pair? v)
+        (let ([vx(car v)] [vy(cdr v)])
+          (ppat vx x (ppat vy y kt kf) kf) )
+        kf
+    ) )
+    ([_ v lit kt kf] (if [equal?(quote lit)v] kt kf))
+) )
+;(ppat '(1 b) (,a b) *t *f)
+;(ppat '(2 3) (,a ,b) b *f)
+
+(def-syt pmatch-aux
+  (syt-ruls (else guard)
+    ([_ name (rator rand ...) cs ...] ;rator rand
+      (let ([v (rator rand ...)])
+        (pmatch-aux name v cs ...) )) ;cs?
+    ([_ name v] ;err-case
+      (bgn
+        (if 'name
+          (printf "pmatch ~s failed\n~s\n" 'name v)
+          (printf "pmatch failed\n ~s\n" v))
+        (error 'pmatch "match failed")
+    ) )
+    ((_ name v [else e0 e ...]) (bgn e0 e ...))
+    ((_ name v [pat (guard g ...) e0 e ...] cs ...) ;pat for pattern
+      (let ([fk (lam() (pmatch-aux name v cs ...))])
+        (ppat v pat
+          (if(and g ...) (bgn e0 e ...) (fk))
+          (fk)
+    ) ) )
+    ((_ name v [pat e0 e ...] cs ...)
+      (let ([fk (lam() (pmatch-aux name v cs ...))])
+        (ppat v pat (bgn e0 e ...) (fk))
+) ) ) )
+(def-syt pmatch ;~= aux ;p for pat
+  (syt-ruls (else guard)    ;guard for ?
+    ([_ v      (e ...) ...]
+      (pmatch-aux  *f  v (e ...) ...) )
+    ([_ v name (e ...) ...] ;v for xsValue, name for aux-info
+      (pmatch-aux name v (e ...) ...)
+) ) )
+
+
+(ali chk fix-chk)
+;(chk 10 cdr '(1 2 3))
+(defm (api? x) (bool [mem? 'x (syms)]))
+
+(defm (api-with x) ;(_ string) ;-> '(xx-string-xx string-xx blar blar)
+  (filter (rcurry with-sym? 'x) (syms))
+)
+;complex-syntax
+
+(define-syntax define-c-function
+  (lambda (x)
+    (define gen-id
+      (lambda (k value)
+        (datum->syntax k ;
+          (string->symbol
+            (id
+              (let ([v (syntax->datum value)]) ;datum
+                [if (string? v) v (symbol->string v)]
+    ) ) ) ) ) )
+    (syntax-case x () ;
+      ( [k cfnam (In ...) Ret]
+        (with-syntax ([name (gen-id #'k #'cfnam)]) ;
+         #'(define name ;
+            (foreign-procedure [if (string? 'cfnam) 'cfnam (symbol->string 'cfnam)]
+              (In ...) Ret
+      ) ) ) )
+) ) )
+(ali *tab/jp* *tab/jp/key-a-A*)
+(alias clean restore)
+
+; (defsyt lam-snest
+  ; ([x] nil)
+; )
+
+
+
+(alias callnest call-nest)
+(alias callsnest call-snest)
+
+; system
+
+;ffi
+
+(alias load-lib load-shared-object)
+(alias ffi? foreign-entry?) ;
+(alias ffi foreign-procedure)
+
+;CFName nArgs tyRet fname? ;(defc Beep (void* void*) bool [beep]) ;(api: Beep 2 bool [])? ;(fname-sym CFName)
+;(_ fname (var1 var2) ret FName (void* void*))
+;(_ bool Beep (freq=1047 dura))
+
+(defsyt defc*
+  ( [_ f]
+    (defc* f (void)) ) ;
+  ( [_ f args]
+    (defc* f args void*) ) ;
+  ( [_ f args ret] ;defa
+    (defc* f args ret f) ) ;
+  ( [_ api args ret f] ;f is case-sensitive ;how many args ;void* is ok too ;no ret is ok too ;
+    (def f (ffi (sym->str 'api) args ret)) ) ;outer-proc ;todo f?
+  ( [_ api args ret f rems]
+    (defc* api args ret f)
+) )
+
+(defsyt defc
+  ( [_ ret f args]
+    (def f (ffi (sym->str 'f) args ret)) )
+  ( [_ fnam ret api args] ;
+    (def fnam (ffi (sym->str 'api) args ret)) )
+  ( [_ fnam rems ret api args]
+    (defc fnam ret api args) )
+  ( [_ fnam rems ret api args flg]
+    (def fnam (ffi flg (sym->str 'api) args ret))
+) )
+
+
+(alias sleep c-sleep)
+(alias numofMidiOut midi-out-get-num-devs)
+
+;===================== defs =======================
+
+(def    *f   #f)
+(def    *t   #t)
+(def    *v   (void))
+(def    *e   '[(err)]) ;
+(def    nil  '()) ;
+(def    T    #t)
+(def    F    #f)
+(def    No   *f)
+(def    Yes  *t)
+(def    spc  " ")
+(define Void *v)
+(define Err  *v) ;
+(define Tru  *t)
+(define Fal  *f)
+
+;
+
+(def *will-ret* #t)
+(def *will-disp*  #t)
+
+; doc 1/2 flag
+
+(define (htab/fn-args?) T) ;
+
+(if (htab/fn-args?)
+  (mk-htab *htab/fn-args* nil) ;
+  (mk-htab *htab/fn-doc* nil)
+)
+
+;Bug: when rec def/doc in def
+
+;===
+
+(def append!.ori append!) ;
+(def (append! xs . yz) ;?
+  (def (_ xs yz)
+    (if (nilp yz) xs
+      (if (nilp xs)
+        (append!% xs [_ (car yz) (cdr yz)]) ;
+        (bgn
+          (set-cdr! (last-pair xs) [_ (car yz) (cdr yz)])
+          xs
+  ) ) ) )
+  (_ xs [remov-nil yz]) ;when to ys/cons/append!/set-cdr!
+)
+
+(def (curry g . args) ;curry(0~)2
+  (lam xs
+    (redu g ;
+      (append~ args xs)
+) ) )
+(def (rcurry g . args)
+  (lam xs
+    (redu g
+      (append~ xs args)
+) ) )
+(def (curry~ g . args)
+  (lam xs
+    (redu~ g ;
+      (append~ args xs)
+) ) )
+(def (rcurry~ g . args)
+  (lam xs
+    (redu~ g
+      (append~ xs args)
+) ) )
+
+(def void? (curry eq *v))
+(def (str/pair? x) [or(string? x)(pair? x)]) ;x
+(def (str/pair/vec? x) [or(string? x)(pair? x)(vector? x)]) ;for eql/eq
+
+(def (id x) x)
+
+(def car.ori car)
+(def cdr.ori cdr)
+(def (car% xs)
+  (if (atomp xs) Err
+    (car xs) ;.ori
+) )
+(def (cdr% xs)
+  (if (atomp xs) Err
+    (cdr xs)
+) )
+
+;
+
+(def (display* . xs)
+  (def (_ xs)
+    (if (nilp xs) *v
+      (bgn
+        (display (car xs)) ;write/pretty-print/display/?
+        [_ (cdr xs)]
+  ) ) )
+  ;(if *will-disp*
+    (_ xs)
+) ;)
+
+(def (ok? x)
+  (if [or (nilp x) (fal? x)] Fal
+    Tru
+) )
+
+(def [please-return!] (setq *will-ret* Tru))
+(def [dont-return!]   (setq *will-ret* Fal))
+
+(def (return x)
+  (if *will-ret* x
+    (if (ok? x) 'OK
+      'FAIL
+) ) ) ;DONE->OK FAIL
+
+(def (set-alp! pr x)
+  (set-car! (last-pair pr) x)
+)
+(def (set-dlp! pr x)
+  (set-cdr! (last-pair pr) x)
+)
+
+;
+
+(defn conz (xs . ys)
+  (if (nilp ys) xs
+    (append xs ys) ;! a a -> cycle
+) )
+;(alias conj conz)
+
+
+;(_ '(a [b 2] [c])) ;-> 2
+(defn num-not-defa-vals (paras)
+  (def (_ paras n)
+    (if (nilp paras) n
+      (let ([a (car paras)][d (cdr paras)])
+        (if (consp a) ;
+          (if (nilp (cdr a)) ;<-atomp
+            [_ d (1+ n)]
+            [_ d n] )
+          [_ d (1+ n)]
+  ) ) ) )
+  (_ paras 0)
+)
+
+(def (list-elements xs) ;(_ '(a (b) (c 1) d)) ~> '((a) (b) (c 1) (d))
+  (def (_ xs)
+    (if (nilp xs) nil
+      (let ([a (car xs)])
+        (if (sym? a) ;consp lisp sym?
+          (cons (li a) [_ (cdr xs)])
+          (cons a [_ (cdr xs)]) ;
+  ) ) ) )
+  (_ xs)
+)
+(def (list-the-front xs) ;partly ;(_ '(a (b) (c 1) d)) ~> '((a) (b) (c 1) (d)) ~> '((a) (b) (c 1) (d nil))
+  (def (_ xs)
+    (if (nilp xs) nil
+      (let ([a (car xs)])
+        (if (sym? a) ;consp lisp sym? ?
+          (cons (li a) [_ (cdr xs)]) ;
+          xs ;
+  ) ) ) )
+  (_ xs)
+)
+
+; (def (defa->vals/aux paras vals nths-defa-part nths-not-defa nths-defa-rest) ;
+  ; (def (_ paras vals n-head n-ndefa n-tail ret)
+    ; (if (nilp paras)  ret ;
+      ; (let ([ev-cadr (lam (xs) [ev(cadr xs)])])
+        ; (if (nilp vals)
+          ; [_ nil nil 0 0 0 [append~ (rev ret) (map ev-cadr paras)]] ;
+          ; (letn ([a (car paras)] [d (cdr paras)])
+            ; (if (cdr-nilp a)
+              ; (cons (car vals) [_ d (cdr vals) n-head (1- n-ndefa) n-tail ret]) ;
+              ; (if (<1 n-head)
+                ; [_ d vals 0 n-ndefa (1- n-tail) (cons(ev[cadr a])ret)] ;
+                ; (cons (car vals) [_ d (cdr vals) (1- n-head) n-ndefa n-tail ret]) ;
+  ; ) ) ) ) ) ) )
+  ; [_ paras vals nths-defa-part nths-not-defa nths-defa-rest nil]
+; )
+(def (defa->vals/aux paras vals numof-defa-vals numof-not-defa numof-defa-rest) ;@
+  (def (_ paras vals n-head n-ndefa n-tail ret)
+    (if (nilp paras) (rev ret)
+      (let ([ev-cadr (lam (xs) [ev(cadr xs)])])
+        (if (nilp vals)
+          [append~ (rev ret) (map ev-cadr paras)] ;ev for eg: nil->'()
+          (let ([a (car paras)] [d (cdr paras)])
+            (if (cdr-nilp a) ;not-defa
+              [_ d (cdr vals) n-head (1- n-ndefa) n-tail (cons (car vals) ret)]
+              (if (<1 n-head) 
+                [_ d vals 0 n-ndefa (1- n-tail) (cons (ev-cadr a) ret) ] ;
+                [_ d (cdr vals) (1- n-head) n-ndefa n-tail (cons (car vals) ret)]
+  ) ) ) ) ) ) )
+  [_ paras vals numof-defa-vals numof-not-defa numof-defa-rest nil]
+)
+;(defa->vals/aux% '((a)(b 3)(c)) '(2 4) 0 2 1) -> '(2 3 4)
+
+;common
+
+(def (redu~/fold g xs) ;-> curry/compose~ ;elements of xs must be simular
+  (if (nilp xs) (g)
+    (foldl g (car xs) (cdr xs)) ;wrong sometimes: values map echo ;echo ~> '(*v) ;evs ;i/o
+) ) ;curry?
+
 
 ;
 
@@ -1067,8 +1728,6 @@ to-test:
 
 ;
 
-(def *will-ret* #t)
-(def *will-disp*  #t)
 
 
 ;
@@ -1091,68 +1750,11 @@ to-test:
     (_ xs)
 ) )
 
-
-;sy-
-
-(defsyt sy-rev% ;
-  ([_ () (ret ...)] '(ret ...)) ;
-  ([_ (x) (ret ...)]
-    '(x ret ...) )
-  ([_ (x ys ...) (ret ...)]
-    (sy-rev% [ys ...] [x ret ...]) )
-)
-(defsyt sy-rev
-  ([_ (xs ...)]
-    [sy-rev% (xs ...) ()] )
-  ([_ xs ...]
-    [sy-rev% (xs ...) ()] )
-)
-
-(defsyt lam-nest% ;(_ (a b) bd...) -> [lam(a)[lam(b) bd...]]
-  ([_ () (ret ...)]
-    [ret ...] )
-  ([_ (x) (ret ...)]
-    [lam(x) [ret ...]] )
-  ([_ (x ys ...) (ret ...)]
-    [lam(x) (lam-nest% (ys ...) [ret ...])] ) ;
-)
-(defsyt lam-rnest%
-  ([_ () (ret ...)]
-    [ret ...] )
-  ([_ (x) (ret ...)]
-    [lam(x) [ret ...]] )
-  ([_ (x ys ...) (ret ...)]
-    (lam-rnest% (ys ...) [lam(x) [ret ...]]) )
-)
-
-(defsyt lam-rnest
-  ([_ (xs ...) bd ...]
-    [lam-rnest% (xs ...) [lam() bd ...]] )
-)
-(defsyt lam-srnest
-  ([_ (xs ...) bd ...]
-    [lam-rnest% (xs ...) (bgn bd ...)] )
-)
-(defsyt lam-nest
-  ([_ (xs ...) bd ...]
-    [lam-nest% (xs ...) [lam() bd ...]] )
-)
-(defsyt lam-snest
-  ([_ (xs ...) bd ...]
-    [lam-nest% (xs ...) [bgn bd ...]] )
-)
-
-
 (define windows?
   (case (machine-type)
     ((a6nt i3nt ta6nt ti3nt) #t)
     (else #f)
 ) )
-
-(ali && and)
-(ali || or)
-
-(ali & bitwise-and)
 
 
 ;quo/sym-
@@ -1165,15 +1767,10 @@ to-test:
 ;
 
 (def (quiet . xs) )
-(alias todo quiet)
-(alias tofix id)
-(alias ?~ if*)
 
 (defn str-mapcase% (mf s)
   (list->string (map mf (string->list s))) ;
 )
-(alias str-upcase   string-upcase)
-(alias str-downcase string-downcase)
 
 (def (swap-para g) ;@ ;rev
   (lam xs
@@ -1207,11 +1804,10 @@ to-test:
     ) ) )
     (_ db 1)
 ) )
-(ali nth-of nth-of-x)
 
 ; list
 
-(def cdr-nilp [lam (x) (nilp(cdr x))])
+(def cdr-nilp [lam (x) (nilp (cdr x))])
 
 ; [duplicates '(123 321 123 321 321 1 2 3)] -> '(123 321 321 ...) -> remov-same
 (def (duplicates xs)
@@ -1243,7 +1839,6 @@ to-test:
     ([maker test cnt]   (find-x-match maker test cnt 0))        ;
     ([maker test]       (find-x-match maker test 1   0  10000))
 ) )
-(ali find-x-meet find-x-match)
 
 (def (flat-list-include ys0 xs0)
   (def (_ ys xs)
@@ -1257,7 +1852,6 @@ to-test:
   (_ ys0 xs0)
 )
 ;(flat-list-include '(1 2 3 4 5) '(2 3))
-(ali list-include flat-list-include)
 
 (defn/defa assoc-g (x ys g) [id]
 ;(def (assoc-g x ys g)
@@ -1349,7 +1943,6 @@ to-test:
   ) ) )
   (_ xs 1)
 )
-(alias list/nth list/nth-)
 (defn list/-nth (xs) ;list->nth~ xs
   (def (_ xs n)
     (if (nilp xs) nil
@@ -1427,91 +2020,6 @@ to-test:
   (_ xs nths 1)
 )
 
-(defsyt set-xth!% ;chg-nth
-  ( [_ xs i y]
-    (letn [ (n (fx1+ i))
-            (m (1- i))
-            (ln (len xs))
-            (pre (ncdr xs (- m ln -1))) ;
-            (pos (ncdr xs n)) ]
-      (set! xs (append pre (cons y pos)) ) ;
-) ) )
-(defsyt set-xth! ;chg-nth
-  ( [_ xs i y]
-    (letn [ (n (fx1+ i))
-            (m (1- i))
-            (ln (len xs))
-            (pre (ncdr xs (- m ln -1))) ;
-            (pos (ncdr xs n)) ] ;
-      (set! xs (append! pre (cons y pos)) ) ;!
-) ) )
-(defsyt set-nth!
-  ([_ xs n y] (set-xth! xs (1- n) y))
-)
-
-(defsyt insert-xth!
-  ([_ xs i y]
-    (letn([pre (head xs i)]
-          [pos (tail xs i)])
-      (setq xs (append! pre (cons y pos)))
-) ) )
-
-(defsyt swap-xths!
-  ( [_ xs i j]
-    (let ([t (nth xs i)])
-      (set-xth! xs i (nth xs j))
-      (set-xth! xs j t)
-  ) )
-  ( [_ xs i ys j]
-    (let ([t (nth xs i)])
-      (set-xth! xs i (nth ys j))
-      (set-xth! ys j t)
-) ) )
-(defsyt swap-nths!
-  ( (_ xs m n)
-    (swap-xths! xs (1- m) (1- n)) )
-  ( (_ xs m ys n)
-    (swap-xths! xs (1- m) ys (1- n)) )
-)
-
-
-(def-syt (pop stx)
-  (syt-case stx ()
-    ( [_ xs]
-      [identifier? #'xs]
-      #'(setq xs (cdr xs)) )
-    ( [_ xs]
-      #'(car xs) )
-) )
-
-(def-syt (push stx)
-  (syt-case stx () ;
-    ([_ args ... x]
-      (identifier? #'x) ;
-      #'(setq x (cons* args ... x)) ) ;
-    ([_ . args]
-      #'(cons* . args)
-) ) )
-
-; to make return similar to bgn/values, with multiple input values
-
-(def-syt (rpush stx)
-  (syt-case stx ()
-    ([_ args ... xs]
-      (identifier? #'xs)
-      #'(bgn
-        (if [nilp xs]
-          (setq xs (li args ...))
-          (set-cdr! (last-pair xs) (li args ...)) ) ;
-        (return xs)
-    ) ) ;
-    ([_ args ... xs]
-      #'(if [nilp xs]
-        (setq xs (li args ...)) ;
-        (bgn
-          (set-cdr! (last-pair xs) (li args ...)) ;let ([xs xs]) ?
-          (return xs)
-) ) ) ) )
 
 
 
@@ -1545,9 +2053,6 @@ to-test:
     ) )
     ([ss ori new] (string-replace* ss ori new -1))
 ) )
-(ali str-replace string-replace*)
-
-
 (def (command-result cmd)
   (let-values
     ( [ (in ou er id)
@@ -1566,26 +2071,6 @@ to-test:
 ) ) ) )
 
 
-(defsyt type-main ;todo detail for printf
-  ( [_ x]
-    (cond
-      ;((ffi-s? (any->str 'x))  "ffi") ;x if not sym
-      ((sym?  x)      "symbol") ;
-      ((bool? x)      "boolean")
-      ((num?  x)      "number") ;
-      ((char? x)      "char") ;
-      ((str?  x)      "string") ;
-      ((nil?  x)      "null")
-      ((list? x)     "list") ;
-      ((pair? x)      "pair")
-      ;((ffi?  x)      "ffi") ;
-      ((fn?   x)      "fn") ;procedure
-      ((vector? x)    "vector") ;
-      ((void? x)      "void")
-      ((atom? x)      "other-atom") ;(eof-object) ;x (void) #err
-      (else           "other")  ;other-atoms
-) ) )
-(alias ty type-main)
 
 (def [bool x] (if x Tru Fal)) ;nil? 0? ;does it conflit with bool type in ffi ?
 
@@ -1604,11 +2089,6 @@ to-test:
     ; ((atom?   x) (sym->str           'x)) ;
     ; (els          "")
 ; ) )
-(defm (raw . xs) ;
-  (if~ (nilp 'xs) nil
-    (cdr-nilp 'xs) (car 'xs)
-    'xs
-) )
 
 (def (any->str x)
   (cond
@@ -1635,7 +2115,6 @@ to-test:
   ) )
   (_ xs 0)
 )
-(alias lis2num list->num)
 
 (def (str . xs) (lis->str xs))
 
@@ -1654,7 +2133,6 @@ to-test:
   (_ nil 0 xns)
 )
 (def (xn-mk-list . xns) (xn-mk-list% xns))
-(ali xn->list xn-mk-list)
 
 (defn nx->list (n x) ;a bit faster than make-list
   (def (_ n rest)
@@ -1776,7 +2254,6 @@ to-test:
             `("'(" ,@xs ")") ) ) ])
     (read p)
 ) )
-(alias readexp read-expr)
 (def (evs . xs) [ev (redu readexp xs)])
 
 (defn chars-replace-x (cs x xx)
@@ -1797,12 +2274,6 @@ to-test:
 ;'((1 * 2 + 3 * 4) - 5) =>
 ;(_ '((1 * 2 + 3 * 4) - 5)) => '(((1 * 2) + (3 * 4)) - 5)
 ;(defn f () nil)
-
-;cl
-
-(alias atom atom?)
-(alias null null?)
-(alias second cadr)
 
 (define (union x y)
   (if (pair? x)
@@ -1827,31 +2298,6 @@ to-test:
     #f
 ) )
 
-(defsyt getf
-  ((_ xs xtag)
-    (if (<(len xs)2) nil
-      (if (eq (car xs) 'xtag)
-        (cadr xs)
-        (ev `(getf (cddr xs) xtag)) ;
-) ) ) )
-
-(defsyt getf-xth-iter
-  ((_ x f1 i)
-    (if (<(len x)2) nil ;
-      (if (eq (car x) 'f1)
-        (fx1+ i)
-        (ev `(getf-xth-iter (cddr x) f1 (+ 2 i)))
-) ) ) )
-(defsyt getf-xth
-  ((_ x f1)
-    (getf-xth-iter x f1 0)
-) )
-(defsyt setf* ;(_ mapA tagX a)
-  ((_ x f1 a)
-    (letn [ (i (getf-xth x f1)) ]
-      (if (nilp i) (if *will-ret* x nil)
-        (set-xth! x i a)
-) ) ) )
 
 (defn getf* (xs xtag) ;`(:n ,n :x ,x)
   (if (<(len xs)2) nil
@@ -1868,23 +2314,12 @@ to-test:
   ) ) )
   (_ xs iz)
 )
-(alias aref list-ref) ;
-
-;oth
-(alias op-inp-str open-input-string)
 
 (defn char->string(x) (list->string(li x)))
 
 (def (str-explode s)
   (map char->string(string->list s))
 )
-(alias str->ss str-explode)
-
-
-;C
-
-
-(alias ref list-ref)
 
 (def (xth xs . iths)
   ; (def (once x i)
@@ -1905,16 +2340,6 @@ to-test:
   [_ xs (cdr nths) (1-(car nths))] ;
 )
 
-;lisp use quo and defsyt, instead of get-addr in c
-(defsyt swap
-  ( [_ a b]
-    (if (eql a b)
-      nil
-      (let ([t a])
-        (setq a b  b t)
-    ) )
-    (li a b)
-) )
 
 (def [car-atomp x] (atomp(car x)))
 
@@ -1927,7 +2352,6 @@ to-test:
   ) )
   (_ xs nil)
 )
-(alias rev! reverse!)
 
 (defn flat (xs)
   (def (rec x ret)
@@ -1949,7 +2373,6 @@ to-test:
   ) ) )
   (_ xs 0)
 )
-(alias d-len deep-length) ;d-cnt
 ;(d-len '[((a b)c)(d e)]) ;-> 5
 
 (defn flat-and-remov (x xs)
@@ -2054,12 +2477,6 @@ to-test:
 (defn stru>(x y) (mk<>= stru-cmp (li x y) '>))
 (defn stru<(x y) (mk<>= stru-cmp (li x y) '<))
 
-(defm (assert resl test)
-  (letn ([tmp resl] [b(eql tmp test)]
-      [ret(if b 'Ok 'Wrong!!)] [ss `(resl " expect " test " ---> " ,ret)] )
-    (redu echo ss) ;
-    (newln)
-) )
 (def (assert0 resl test)
   (echol
     (if (eql resl test) 'Ok
@@ -2084,16 +2501,10 @@ to-test:
 (def >=1 (curry <= 1))
 (def <=1 (curry >= 1))
 
-(alias =0 =0?)
-(alias =1 =1?)
 (def (not= a b) (not(= a b))) ;!==
-(alias != not=)
 (def [!=0 x] (not[=0 x]))
-(alias >> bitwise-arithmetic-shift-right)
-(alias << bitwise-arithmetic-shift-left)
 
 (def (len0? x) (eq (len x) 0))
-(alias len0 len0?)
 (def [len>0  x] (>0 (len x)))
 (def [len<0  x] (<0 (len x)))
 (def [len>=0 x] (>=0(len x)))
@@ -2104,7 +2515,6 @@ to-test:
 (def [len>=1 x] (>=1(len x)))
 (def [len<=1 x] (<=1(len x)))
 
-(alias inexa inexact)
 
 (def (xor . xs)
   (def (xor2% a b) ;logical ;(bitwise-xor 1 1 2 2 2 2 3 3 3)
@@ -2352,7 +2762,6 @@ to-test:
 ;(cost (prime (1-[redu~ * (primes 2 13)]) 1))
 ;402245102020351 is the nth? prime-num start from 2 ?
 
-(alias quot quotient)
 
 (def n-digits ;integer-length 128 2
   (case-lam
@@ -2365,7 +2774,6 @@ to-test:
       (_ num 1) )
     ([num] (n-digits num 10))
 ) )
-(ali nbits n-digits)
 
 (def (leap-year? yr)
   (or (=0 [% yr 400])
@@ -2502,7 +2910,6 @@ to-test:
   ) ) ) )
   (_ nil xs xs)
 )
-(alias permu permutation)
 
 (def (combinations xs n)
   (def (_ xs n)
@@ -2542,23 +2949,6 @@ to-test:
   ) )
   (d-rev xs)
 )
-(ali d-rev deep-reverse)
-
-;onlisp
-
-(def-syt [nreverse! stx]
-  (syntax-case stx ()
-    ([_ xs]
-      [identifier? #'xs]
-      #'(let ([tmp (rev xs)])
-        (set! xs (li(car xs)))
-        tmp
-    ) )
-    ([_ xs]
-      #'(rev xs) )
-) )
-
-(ali list-divide-per group)
 
 (def (group xs m) ;?(= m per) (group '(1 2 3 4 5 6) 3 1)
   (let ([m (if [eq 0 m] 1 m)]) ;
@@ -2611,8 +3001,6 @@ to-test:
   )  
   (d-rev [~ nil (list nil) (car xz) (cdr xz)]) ;remov nil xz
 ) ;4x+ slow
-(ali map-all map-for-combinations)
-
 ;
 
 (def (sym-explode sym) ;[explode 'asd] ~> '[a s d]
@@ -2669,7 +3057,7 @@ to-test:
   )
   (_ n)
 ) ; N mod z ?=> a^q*s^w*d^e mod z => ... ; encrypt: 椭圆曲线加密 ; 所有基于群幂的离散对数的加密算法
-(ali fast-expt/x0 fast-expt-algo)
+
 
 (def/va (fast-expt g x [n 1]) ;not for pow
   (def (_ i)
@@ -2687,11 +3075,6 @@ to-test:
   (_ n)
 )
 
-(ali mat-unitlen matrix-unitlen)
-(ali mat-unit   matrix-unit)
-(ali mat-unitof matrix-unitof)
-(ali mat-mul matrix-mul)
-(ali mat-pow matrix-pow)
 
 (def (matrix-unitlen m) [len (car m)])
 
@@ -2820,15 +3203,6 @@ to-test:
 ;((mat m 3) 1 2 3 4 5 6)
 ;(_ numForOneRow aFlattenList): (_ 3 (range 6)) -> '((0 1 2)(3 4 5))
 
-(ali lis2mat group) ;(lis2mat '(1 2 3 4 5) 2) -> ((1 2) (3 4) (5 0))?
-; (def (_ xs)
-  ; (if (<= (len xs) per) ;
-    ; (li xs)
-    ; (cons (head xs per) [_ (tail xs per)]) ;
-; ) )
-(ali mat2lis flat)
-
-(ali mat-ref xth)
 
 ;?matlen submat
 (def (dotmul da db) ;(1,2,3)*(4,5,6) ;dot-multiply: point1 point2
@@ -2846,7 +3220,6 @@ to-test:
   ) )
   [_ m]
 )
-(ali mat-1Muln pt-mat-mul)
 
 (def (mat-mat-mul ma mb) ;mul-2-matrixes
   (def (_ ma)
@@ -2855,7 +3228,6 @@ to-test:
   ) )
   [_ ma]
 )
-(ali mat-nMuln mat-mat-mul)
 
 (def (matrix-mul . mts) ;matrix-spot-mul matrixes ;what's the limit?
   (fold-left mat-mat-mul (car mts) (cdr mts))
@@ -2864,7 +3236,6 @@ to-test:
 ;AI
 
 (def ReLU (curry max 0))
-(alias relu ReLU)
 
 (defn sigmoid (x)
   (/ (1+ [exp(- x)]))
@@ -2896,7 +3267,6 @@ to-test:
 )
 
 (defn diagonal-length(x y) [sqrt(redu-map + pow (li x y))])
-(alias diagonalength diagonal-length)
 
 (defn mm->inch (mm) ;inch(/cun)
   ;(* mm 0.0393701) ;英寸Inch
@@ -2950,7 +3320,7 @@ to-test:
 ; ((lam (g) `(,g ',g)) '(lam (g) `(,g ',g))))
 
 (def (quine-f g) `(,g ',g)) ;[_ '_] `,_ ' ;(quine 'quine) (ev(quine 'quine)) (eql (quine 'quine) (ev(quine 'quine)))
-(defm (quine g) `(,'g ,'g))
+
 
 (defn/defa ev-n (x m) [1]
   (def (_ x n)
@@ -2961,10 +3331,6 @@ to-test:
   ) ) ;) )
   (_ x 1)
 )
-
-(alias exception? condition?)
-(alias try-fail? condition?)
-(ali bad-try? condition?)
 (def (full-eval x) ;
   (def (_ x)
     (let ([ret (try(ev x))])
@@ -2974,13 +3340,6 @@ to-test:
   ) ) )
   (_ x)
 )
-(alias ev-full full-eval)
-
-
-
-; (defsyt lam-snest
-  ; ([x] nil)
-; )
 
 ;;church-number: https://www.zhihu.com/question/39930042 https://www.jianshu.com/p/73f80c379860
 
@@ -3109,8 +3468,6 @@ to-test:
     (_ (car ns) 1 (cdr ns))
 ) )
 
-(alias float inexact)
-
 (defn apply/reducing-num (f n)
   (def (_ ret n)
     (if (< n 1) ret
@@ -3138,9 +3495,6 @@ to-test:
 
 (def num->lbump (rcurry num->lbump-g li))
 (def num->rbump (rcurry num->rbump-g li))
-
-(alias num->bump-g num->rbump-g)
-(alias num->bump num->rbump)
 
 ; (defn dmap% (g xs)
   ; (def (_ xs ret)
@@ -3179,32 +3533,11 @@ to-test:
   (vec->lis (lis->vec xs))
 )
 
-
-;vec@: mk-vec n; vec-fill!; vec-set! v i x;
-
-(ali vec-len  vector-length)
-(ali mk-vec   make-vector)
-(ali vec-copy vector-copy)
-(ali vec-set-fnum! vector-set-fixnum!)
-(ali vec-set! vector-set-fixnum!)
-(ali vecar    vec-car)
-
-(def-syt (ve-push* stx)
-  (syt-case stx () ;
-    ( [_ args ... x]
-      (identifier? #'x) ;
-      #'[setq x (ve-cons* args ... x)] ) ;mk-vec will slower than list's
-    ( [_ . args]
-      #'(ve-cons* . args)
-) ) )
-
 (def (vec-nilp x) ;
   (if [vecp x]
     (=0 (vec-len x))
     Fal
 ) )
-(alias vnilp vec-nilp)
-
 ;(def num->lis (curry apply/reducing-num cons)) ;
 (def num->lis iota)
 
@@ -3243,8 +3576,6 @@ to-test:
         ve )
       nil
 ) ) )
-(alias vecons vec-cons)
-
 (defn vec-conz (vx y)
   (if (vecp vx)
     (letn ([n (vec-len vx)][ve (mk-vec [1+ n])])
@@ -3254,8 +3585,6 @@ to-test:
     )
     nil ;
 ) )
-(alias veconz vec-conz)
-
 
 (def (vec-head ve n) ;
   (letn ([ret (mk-vec n)])
@@ -3271,8 +3600,6 @@ to-test:
     ret
 ) )
 (def vec-cdr (rcurry vec-tail 1)) ;@
-(alias vecdr vec-cdr)
-
 (defn vec-dmap (g xs) ;
   (def [_ xs]
     (if [vec-nilp xs] vnil
@@ -3420,79 +3747,11 @@ to-test:
     ([n] [randnums n n])
 ) )
 
-;exercise
-(defsyt try
-  ([_ exp]
-    (guard (x (els x)) exp) ;(condition? #condition) -> *t
-) )
 
 
-; htab 1/2
+; doc 2 for documentable
 
-;(mk-htab htab (list ))
-(defsyt mk-htab ;!
-  ([_ var init] ;key-eq?]
-    (if (exception? (try var))
-      (setq var init)
-      nil ;(error "existed" 'var)
-) ) )
-
-;(add-to-htab htab (list key value))
-(defsyt add-to-htab
-  ( [_ ht child] ;!
-    (let ([key (car child)])
-      (if (! (htab/key-exist? key ht))
-        (rpush child ht) ;
-        (error "existed" key)
-) ) ) )
-(defsyt add-to-htab!
-  ( [_ ht child]
-    (let ([key (car child)])
-      (def (_ ht)
-        (if (cdr-nilp ht)
-          (set-cdr! ht (list child)) ;
-          (if (eq key (caar ht))
-            (set-car! ht child) ;
-            [_ (cdr ht)]
-      ) ) )
-      (if (nilp ht)
-        (setq ht (list child)) ;
-        [_ ht]
-) ) ) )
-
-
-; doc for documentable
-
-;(def/doc (asd) "usage: (asd)~>123" 123) (doc asd)~>"usage..."
-
-(mk-htab *htab/fn-doc* nil)
-
-;(car body) if-is string, save to (doc)
-(def-syt def/doc
-  (syt-ruls ()
-    ( [_ x] (def x *v))
-    ( [_ (g . args) doc body ...]
-      (bgn ;
-        (add-to-htab! *htab/fn-doc* '(g doc)) ;
-        (define (g . args) body ...)
-    ) )
-    ( [_ x doc e]
-    
-      (define x e) )
-    ( [_ x e]
-      (define x e)
-) ) )
-
-(defsyt doc ;
-  ( [_ key]
-    ;if fn? key
-    (get-htab-value *htab/fn-doc* 'key) ;
-  )
-  ( [_ key htab]
-    (get-htab-value htab 'key) ;
-) )
-
-(def/va (docs [ht *htab/fn-doc*]) ;
+(def/va (docs [ht (if (htab/fn-args?) *htab/fn-args* *htab/fn-doc*)]) ;
   ht
 )
 
@@ -3508,11 +3767,47 @@ to-test:
   (_ ht)
 )
 
+(def (doc% ht key) ;not get-htab-value
+  (def (_ ht)
+    (if (nilp ht) nil
+      (if (eq key (caar ht))
+        (let ([tmp (cadar ht)]) ;
+          (if (str? tmp) tmp ;?
+            (car ht)
+        ) )
+        [_ (cdr ht)]
+  ) ) )
+  (_ ht)
+)
+(def (doc-paras% ht key)
+  (def (_ ht)
+    (if (nilp ht) nil
+      (if (eq key (caar ht))
+        (let ([val (cadar ht)]) ;
+          (if (consp val)
+            [if (eq 'lam (car val))
+              (cadr val)
+              nil ]
+            nil
+        ) )
+        [_ (cdr ht)]
+  ) ) )
+  (_ ht)
+)
 (def (get-htab-value ht key)
   (def (_ ht)
     (if (nilp ht) nil
       (if (eq key (caar ht))
         (cadar ht)
+        [_ (cdr ht)]
+  ) ) )
+  (_ ht)
+)
+(def (get-htab-kv ht key)
+  (def (_ ht)
+    (if (nilp ht) nil
+      (if (eq key (caar ht))
+        (car ht)
         [_ (cdr ht)]
   ) ) )
   (_ ht)
@@ -3597,44 +3892,6 @@ to-test:
         (values (reverse ys) xs)
         (loop (cdr xs) (cons (car xs) ys)))))
 
-;
-; pattern matching
-
-(define-syntax list-match
-  (syntax-rules ()
-    ((_ expr (pattern fender ... template) ...)
-      (let ((obj expr))
-        (cond ((list-match-aux obj pattern fender ...
-                (list template)) => car) ...
-              (else (error 'list-match "pattern failure")))))))
-
-(define-syntax list-match-aux
-  (lambda (stx)
-    (define (underscore? x)
-      (and (identifier? x) (free-identifier=? x (syntax _))))
-    (syntax-case stx (quote quasiquote)
-      ((_ obj pattern template)
-        (syntax (list-match-aux obj pattern #t template)))
-      ((_ obj () fender template)
-        (syntax (and (null? obj) fender template)))
-      ((_ obj underscore fender template)
-        (underscore? (syntax underscore))
-        (syntax (and fender template)))
-      ((_ obj var fender template)
-        (identifier? (syntax var))
-        (syntax (let ((var obj)) (and fender template))))
-      ((_ obj (quote datum) fender template)
-        (syntax (and (equal? obj (quote datum)) fender template)))
-      ((_ obj (quasiquote datum) fender template)
-        (syntax (and (equal? obj (quasiquote datum)) fender template)))
-      ((_ obj (kar . kdr) fender template)
-        (syntax (and (pair? obj)
-                (let ((kar-obj (car obj)) (kdr-obj (cdr obj)))
-                  (list-match-aux kar-obj kar
-                        (list-match-aux kdr-obj kdr fender template))))))
-      ((_ obj const fender template)
-        (syntax (and (equal? obj const) fender template))))))
-
 ;;
 
 (defn call-nest (g . xs) ;
@@ -3644,7 +3901,6 @@ to-test:
   ) )
   (~ g xs)
 )
-(alias callnest call-nest)
 
 (defn call-snest (g . ys)
   (defn ~ (g ys)
@@ -3653,58 +3909,18 @@ to-test:
   ) )
   (~ g ys)
 )
-(alias callsnest call-snest)
-
-; system
-
-;ffi
-
-(alias load-lib load-shared-object)
-(alias ffi? foreign-entry?) ;
-(alias ffi foreign-procedure)
-
-;CFName nArgs tyRet fname? ;(defc Beep (void* void*) bool [beep]) ;(api: Beep 2 bool [])? ;(fname-sym CFName)
-;(_ fname (var1 var2) ret FName (void* void*))
-;(_ bool Beep (freq=1047 dura))
-
-(defsyt defc*
-  ( [_ f]
-    (defc* f (void)) ) ;
-  ( [_ f args]
-    (defc* f args void*) ) ;
-  ( [_ f args ret] ;defa
-    (defc* f args ret f) ) ;
-  ( [_ api args ret f] ;f is case-sensitive ;how many args ;void* is ok too ;no ret is ok too ;
-    (def f (ffi (sym->str 'api) args ret)) ) ;outer-proc ;todo f?
-  ( [_ api args ret f rems]
-    (defc* api args ret f)
-) )
-
-(defsyt defc
-  ( [_ ret f args]
-    (def f (ffi (sym->str 'f) args ret)) )
-  ( [_ fnam ret api args] ;
-    (def fnam (ffi (sym->str 'api) args ret)) )
-  ( [_ fnam rems ret api args]
-    (defc fnam ret api args) )
-  ( [_ fnam rems ret api args flg]
-    (def fnam (ffi flg (sym->str 'api) args ret))
-) )
-
 ;
 
 (load-lib "kernel32.dll") ;Beep
 (defc* GetCommandLineA () string get-command-line)
 (defc beep (freq dura) void* Beep (void* void*))
 (defc c-sleep (ms) unsigned Sleep (unsigned) __collect_safe) ;(defc c-sleep Sleep 1) ;(ms) ;__collect_safe "sleep"
-(alias sleep c-sleep)
 
 (load-lib "msvcrt.dll")
 (defc void* clock ())
 
 (load-lib "winmm.dll")
 (defc midi-out-get-num-devs() int midiOutGetNumDevs()) ;
-(alias numofMidiOut midi-out-get-num-devs)
 
 ;(def (main-args) (str-split (GetCommandLineA) spc))
 
@@ -3727,31 +3943,6 @@ to-test:
     (+ (.* sec [pow 10 3]) (.* nano [pow 10 -6])) ;
 ) )
 
-(defsyt cost
-  ( [_ g]
-    (let ([t 0] [res nil])
-      (echol (fmt ": ~s" 'g))
-      ;(set! t (clock))
-      (set! t (get-ms))
-      (set! res g)
-      ;(set! t (inexa(/ (-(clock)t) CLOCKS_PER_SEC)))
-      (set! t (-(get-ms)t))
-      ;(echol ": elapse =" t "s")
-      (echol ": elapse =" t "ms")
-      (li res t)
-) ) )
-(defsyt elapse ;just elapse but result
-  ( [_ g]
-    (let ([t 0])
-      (echol (fmt ": ~s" 'g))
-      ;(set! t (clock))
-      (set! t (get-ms))
-      g
-      ;(set! t (inexa(/ (-(clock)t) CLOCKS_PER_SEC)))
-      (set! t (-(get-ms)t))
-      (echol ": elapse =" t "ms")
-      t
-) ) )
 
 
 (def (eq/eql x)
@@ -3785,56 +3976,6 @@ to-test:
   (rev [_ xs nil]) ;
 )
 
-;Code written by Oleg Kiselyov
-
-(def-syt ppat ;ppattern for ?
-  (syt-ruls (if comma unquote quote) ;comma for unquo?
-    ([_ v ? kt kf] kt)
-    ([_ v () kt kf] (if (nilp v) kt kf))
-    ((_ v (quote lit) kt kf) (if (equal? v (quote lit)) kt kf)) ;x?
-    ([_ v (unquote var) kt kf] (let ([var v]) kt))
-    ([_ v (x . y) kt kf]
-      (if (pair? v)
-        (let ([vx(car v)] [vy(cdr v)])
-          (ppat vx x (ppat vy y kt kf) kf) )
-        kf
-    ) )
-    ([_ v lit kt kf] (if [equal?(quote lit)v] kt kf))
-) )
-;(ppat '(1 b) (,a b) *t *f)
-;(ppat '(2 3) (,a ,b) b *f)
-
-(def-syt pmatch-aux
-  (syt-ruls (else guard)
-    ([_ name (rator rand ...) cs ...] ;rator rand
-      (let ([v (rator rand ...)])
-        (pmatch-aux name v cs ...) )) ;cs?
-    ([_ name v] ;err-case
-      (bgn
-        (if 'name
-          (printf "pmatch ~s failed\n~s\n" 'name v)
-          (printf "pmatch failed\n ~s\n" v))
-        (error 'pmatch "match failed")
-    ) )
-    ((_ name v [else e0 e ...]) (bgn e0 e ...))
-    ((_ name v [pat (guard g ...) e0 e ...] cs ...) ;pat for pattern
-      (let ([fk (lam() (pmatch-aux name v cs ...))])
-        (ppat v pat
-          (if(and g ...) (bgn e0 e ...) (fk))
-          (fk)
-    ) ) )
-    ((_ name v [pat e0 e ...] cs ...)
-      (let ([fk (lam() (pmatch-aux name v cs ...))])
-        (ppat v pat (bgn e0 e ...) (fk))
-) ) ) )
-
-(def-syt pmatch ;~= aux ;p for pat
-  (syt-ruls (else guard)    ;guard for ?
-    ([_ v      (e ...) ...]
-      (pmatch-aux  *f  v (e ...) ...) )
-    ([_ v name (e ...) ...] ;v for xsValue, name for aux-info
-      (pmatch-aux name v (e ...) ...)
-) ) )
 
 ;yin's code
 
@@ -3899,8 +4040,6 @@ to-test:
   ) )
   (_ nil 0)
 )
-(ali chk fix-chk)
-;(chk 10 cdr '(1 2 3))
 
 (def with-head?
   (case-lam
@@ -3938,11 +4077,6 @@ to-test:
 
 (def (syms) (environment-symbols (interaction-environment)))
 
-(defm (api? x) (bool [mem? 'x (syms)]))
-
-(defm (api-with x) ;(_ string) ;-> '(xx-string-xx string-xx blar blar)
-  (filter (rcurry with-sym? 'x) (syms))
-)
 
 ;
 
@@ -4020,26 +4154,6 @@ to-test:
 ;(unify `(a b) `(b X) '(X)) ;?-> fail
 
 
-;complex-syntax
-
-(define-syntax define-c-function
-  (lambda (x)
-    (define gen-id
-      (lambda (k value)
-        (datum->syntax k ;
-          (string->symbol
-            (id
-              (let ([v (syntax->datum value)]) ;datum
-                [if (string? v) v (symbol->string v)]
-    ) ) ) ) ) )
-    (syntax-case x () ;
-      ( [k cfnam (In ...) Ret]
-        (with-syntax ([name (gen-id #'k #'cfnam)]) ;
-         #'(define name ;
-            (foreign-procedure [if (string? 'cfnam) 'cfnam (symbol->string 'cfnam)]
-              (In ...) Ret
-      ) ) ) )
-) ) )
 
 (def (sym->chs sym)
   (str->list (sym->str sym))
@@ -4068,7 +4182,6 @@ to-test:
     [ ba ば バ][ bi び ビ][ bu ぶ ブ][ be べ ベ][ bo ぼ ボ]
     [ pa ぱ パ][ pi ぴ ピ][ pu ぷ プ][ pe ぺ ペ][ po ぽ ポ]
 ) )
-(ali *tab/jp* *tab/jp/key-a-A*)
 
 (setq aud/doremi
   '(
@@ -4129,7 +4242,6 @@ to-test:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
 
-(alias clean restore)
 (def (restore)
   (setq nil nil
     ; car car.ori
