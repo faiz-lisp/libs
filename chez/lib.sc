@@ -1,10 +1,11 @@
-(define (version) "Chez-lib V1.97")
+(define (version) "Chez-lib V1.97a")
 (define (git-url) "https://github.com/faiz-lisp/libs.git")
 
 #|
 # Chez-lib.sc - Written by Faiz
 
   - Update notes:
+    - 1.97a Upd : docs -> docs-detail; Added %B flag for a big function;
     - 1.97: Add :(doc-ls co) -> documentable-keys -> '(cons cond); house keeping;
     - 1.96z Upd : def/doc, doc; Added doc-paras;
     - 1.96: Add : def/doc, (doc myfunc1), docs
@@ -22,6 +23,7 @@
   - Suffixes:
     - @ slow / bad
     - % theoretic / internal / paras->list
+    - %B big / cost more memory space
     - ~ just faster
     - * optimized
     - ! (forced and) with side-effect
@@ -1160,7 +1162,7 @@ to-test:
 ;(doc-ls co) -> documentable-keys -> '(cons cond)
 (defm (doc-ls contain)
   (filter (rcurry with-sym? 'contain)
-    (map car (docs))
+    (map car (docs)) ;
 ) )
 
 
@@ -3766,9 +3768,17 @@ to-test:
 
 ; doc 2 for documentable
 
-(def/va (docs [ht (if (htab/fn-args?) *htab/fn-args* *htab/fn-doc*)]) ;
+(def/va (docs-detail [ht (if (htab/fn-args?) *htab/fn-args* *htab/fn-doc*)]) ;
   ht
 )
+(def/va (docs [ht (if (htab/fn-args?) *htab/fn-args* *htab/fn-doc*)])
+  (map
+    (lam (k)
+      (cons k
+        (ev `(doc-paras ,k)) ;
+    ) )
+    (map car ht)
+) )
 
 
 ; htab 2 for hashtable
@@ -3800,9 +3810,10 @@ to-test:
       (if (eq key (caar ht))
         (let ([val (cadar ht)]) ;
           (if (consp val)
-            [if (eq 'lam (car val))
+            (if [eq 'lam (car val)]
+              ;[sym/with-head? (car val) 'lam] ;@
               (cadr val)
-              nil ]
+              nil )
             nil
         ) )
         [_ (cdr ht)]
@@ -3951,8 +3962,8 @@ to-test:
     ; (+ sec (.* [pow 10 -9] nano))
 ; ) )
 (def (get-ms) ;x get-sec-nano
-  (letn ( [time(current-time)]
-      [sec(time-second time)]
+  (letn ( [time (current-time)]
+      [sec (time-second time)]
       [nano(time-nanosecond time)] ) ;
     ;(list sec nano)
     (+ (.* sec [pow 10 3]) (.* nano [pow 10 -6])) ;
@@ -4084,8 +4095,13 @@ to-test:
     ( [xs ys]
       (with? xs ys eql)
 ) ) )
-(def (with-sym? s x)
+(def/doc (with-sym? s x) ;sym/with?
   (redu (rcurry with? eq) ;
+    (map (compose str->list sym->str) ;
+      (list s x) ;
+) ) )
+(def/doc (sym/with-head? s x)
+  (redu (rcurry with-head? eq) ;
     (map (compose str->list sym->str) ;
       (list s x) ;
 ) ) )
