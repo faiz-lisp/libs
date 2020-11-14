@@ -1,11 +1,12 @@
-(define (version) "Chez-lib V1.97a")
+(define (version) "Chez-lib V1.97c")
 (define (git-url) "https://github.com/faiz-lisp/libs.git")
 
 #|
 # Chez-lib.sc - Written by Faiz
 
   - Update notes:
-    - 1.97a Upd : docs -> docs-detail; Added %B flag for a big function;
+    - 1.97c Add : get-htab-:kvs,keys,values
+    - 1.97b Upd : docs-detail -> docs-main; Added %B flag for a big function;
     - 1.97: Add :(doc-ls co) -> documentable-keys -> '(cons cond); house keeping;
     - 1.96z Upd : def/doc, doc; Added doc-paras;
     - 1.96: Add : def/doc, (doc myfunc1), docs
@@ -90,7 +91,7 @@
       - => any->int
     - (_ xs . x) (-> -> x)
     - code:dsl->raw
-    - api-search 可以下载个网页,然后用正则搜索; 每次defn时,记录信息到hashtable
+    - api-search 可以下载个网页,然后用正则搜索
       - 用法直接searching in lib-files就可以了
     - church yc algo
     - structure:
@@ -1147,7 +1148,7 @@ to-test:
     (doc-paras% htab 'key) ;<- doc%
 ) )
 
-(defsyt doc-code ;
+(defsyt doc-code ;-value -keys
   ( [_ key] ;if fn? key
     (get-htab-value ;<- get-htab-value
       (if (htab/fn-args?) *htab/fn-args* *htab/fn-doc*)
@@ -1157,12 +1158,26 @@ to-test:
     (get-htab-value htab 'key) ;<- doc%
 ) )
 
-(ali doc doc-code)
+(defsyt doc-main
+  ( [_ key]
+    (get-htab-kv
+      (if (htab/fn-args?) *htab/fn-args* *htab/fn-doc*)
+      'key
+  ) )
+  ( [_ key htab]
+    (get-htab-kv htab 'key)
+) )
+
+(ali doc doc-main)
 
 ;(doc-ls co) -> documentable-keys -> '(cons cond)
-(defm (doc-ls contain)
-  (filter (rcurry with-sym? 'contain)
-    (map car (docs)) ;
+(defsyt doc-ls
+  ( [_ contain htab] ;defm/va
+    (filter (rcurry sym/with-nocase? 'contain)
+      (map car (docs-main htab)) ;
+  ) )
+  ( [_ contain]
+    (doc-ls contain [if (htab/fn-args?) *htab/fn-args* *htab/fn-doc*]) ;
 ) )
 
 
@@ -3768,7 +3783,7 @@ to-test:
 
 ; doc 2 for documentable
 
-(def/va (docs-detail [ht (if (htab/fn-args?) *htab/fn-args* *htab/fn-doc*)]) ;
+(def/va (docs-main [ht (if (htab/fn-args?) *htab/fn-args* *htab/fn-doc*)]) ;
   ht
 )
 (def/va (docs [ht (if (htab/fn-args?) *htab/fn-args* *htab/fn-doc*)])
@@ -3838,6 +3853,23 @@ to-test:
   ) ) )
   (_ ht)
 )
+(def (get-htab-kvs htab key-with)
+  (filter
+    (compose (rcurry sym/with-nocase? key-with) car)
+    htab
+) )
+(def (get-htab-keys htab key-with)
+  (filter
+    (rcurry sym/with-nocase? key-with)
+    (map car htab)
+) )
+(def (get-htab-values htab key-with)
+  (map ;
+    cadr
+    (filter ;todo new filter-with-action
+      (compose (rcurry sym/with-nocase? key-with) car)
+      htab
+) ) )
 ;(find-htab-key htab value  [eql])
 ;(find-htab-keys htab value [eql])
 
@@ -4097,7 +4129,12 @@ to-test:
 ) ) )
 (def/doc (with-sym? s x) ;sym/with?
   (redu (rcurry with? eq) ;
-    (map (compose str->list sym->str) ;
+    (map (compose str->list sym->str) ;str-downcase
+      (list s x) ;
+) ) )
+(def/doc (sym/with-nocase? s x)
+  (redu (rcurry with? eq) ;
+    (map (compose str->list str-downcase sym->str) ;
       (list s x) ;
 ) ) )
 (def/doc (sym/with-head? s x)
