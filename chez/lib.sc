@@ -1,10 +1,11 @@
-(define (version) "Chez-lib V1.97c")
+(define (version) "Chez-lib V1.97d")
 (define (git-url) "https://github.com/faiz-lisp/libs.git")
 
 #|
 # Chez-lib.sc - Written by Faiz
 
   - Update notes:
+    - 1.97d fast: via atomp ~> consp
     - 1.97c Add : get-htab-:kvs,keys,values
     - 1.97b Upd : docs-detail -> docs-main; Added %B flag for a big function;
     - 1.97: Add :(doc-ls co) -> documentable-keys -> '(cons cond); house keeping;
@@ -1455,12 +1456,14 @@ to-test:
 (def car.ori car)
 (def cdr.ori cdr)
 (def (car% xs)
-  (if (atomp xs) Err
+  (if (consp xs)
     (car xs) ;.ori
+    Err
 ) )
 (def (cdr% xs)
-  (if (atomp xs) Err
+  (if (consp xs)
     (cdr xs)
+    Err
 ) )
 
 ;
@@ -2341,8 +2344,9 @@ to-test:
 (def (get-as-arr xs . iz) ;[_ '((1 2)(3 4)) 0 0]
   (def (_ xs iz)
     (if (nilp iz) xs
-      (if (atomp xs) nil ;<-consp
+      (if (consp xs)
         [_ (xth xs (car iz)) (cdr iz)] ;
+        nil
   ) ) )
   (_ xs iz)
 )
@@ -2373,11 +2377,12 @@ to-test:
 )
 
 
+(def [car-consp x] (consp(car x)))
 (def [car-atomp x] (atomp(car x)))
 
 ;pieces of the most beautiful code
 
-(defn rev (xs)
+(def/doc (rev xs)
   (def (_ xs ret)
     (if (nilp xs) ret
       (_ (cdr xs) [cons (car xs) ret])
@@ -2385,24 +2390,27 @@ to-test:
   (_ xs nil)
 )
 
-(defn flat (xs)
+(def/doc (flat xs)
   (def (rec x ret)
-    (if*
-      (nilp  x) ret
-      (atomp x) (cons x ret) ;
+    (if~
+      [nilp  x] ret
+      [consp x]
       (rec (car x)
-        (rec (cdr x) ret) ;
-  ) ) )
+        (rec (cdr x) ret)) ;
+      (cons x ret) ;
+  ) )
   (rec xs nil)
 )
 
 (def/doc (deep-length xs)
   (def (_ x n)
-    (if* (nilp x) n
-      (atomp x) (fx1+ n) ;
+    (if~
+      [nilp  x] n
+      [consp x]
       (_ (car x)
-        [_ (cdr x) n]
-  ) ) )
+        [_ (cdr x) n] )
+      (fx1+ n) ;
+  ) )
   (_ xs 0)
 )
 ;(d-len '[((a b)c)(d e)]) ;-> 5
@@ -2413,10 +2421,10 @@ to-test:
       (cond
         [(nilp  xs) ret]
         [(g x xs)   ret] ;
-        [(atomp xs) (cons xs ret)]
-        [else
+        [(consp xs)
           (_ (car xs)
             (_ (cdr xs) ret) ) ]
+        [else (cons xs ret)]          
     ) )
     (_ xs nil)
 ) )
@@ -2424,13 +2432,15 @@ to-test:
 (def/doc (bump xs fmt) ;bumpl/bumpup-lhs
   (def (_ x fmt ret)
     (if~
-      (nilp fmt) ret
-      (atomp fmt) (cons x ret)
+      [nilp  fmt] ret
+      [consp fmt]
       (letn ([fa(car fmt)] [ln(d-len fa)] [fd(cdr fmt)] [head.(head x ln)] [tail.(tail x ln)]) ;d-len
-        (if (car-atomp fmt) ;car-atomp
-          [_ (car x) fa [_ tail. fd ret]] ;car
+        (if (car-consp fmt)
           (cons [_ head. fa ret] [_ tail. fd ret]) ;cons _ _
-  ) ) ) )
+          [_ (car x) fa [_ tail. fd ret]] ;car
+      ) )
+      (cons x ret)
+  ) )
   (_ xs fmt nil)
 )
 
@@ -2489,21 +2499,22 @@ to-test:
 (def (stru-cmp xs ys)
   (def (_ xs ys)
     (if (nilp xs) '= ;
-      (if (atomp xs) ;? < atom nil pair list
-        (atom-cmp xs ys)
+      (if (consp xs) ;? < atom nil pair list
         (letn ([x(car xs)] [y(car ys)])
-          (if (atomp x)
+          (if (consp x)
+            (let ([resl [_ x y]])
+              (case resl
+                (= [_ (cdr xs) (cdr ys)])
+                (else resl)
+            ) )
             (if (ty-neq x y) nil
               (let ([resl (atom-cmp x y)])
                 (case resl
                   (= [_ (cdr xs) (cdr ys)])
                   (else resl)
-            ) ) )
-            (let ([resl [_ x y]])
-              (case resl
-                (= [_ (cdr xs) (cdr ys)])
-                (else resl)
-  ) ) ) ) ) ) )
+        ) ) ) ) )
+        (atom-cmp xs ys)
+  ) ) )
   (_ xs ys)
 )
 (defn stru>(x y) (mk<>= stru-cmp (li x y) '>))
