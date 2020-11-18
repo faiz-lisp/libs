@@ -1,12 +1,13 @@
-(define (version) "Chez-lib V1.97d")
+(define (version) "Chez-lib V1.97f")
 (define (git-url) "https://github.com/faiz-lisp/libs.git")
 
 #|
 # Chez-lib.sc - Written by Faiz
 
   - Update notes:
-    - 1.97d fast: via atomp ~> consp
-    - 1.97c Add : get-htab-:kvs,keys,values
+    - 1.97f Upd : sym/with-nocase? -> with?-nocase; get-htab-keys -> htab-keys;
+    - 1.97e fast: via atomp ~> consp
+    - 1.97c Add : htab-:kvs,keys,values
     - 1.97b Upd : docs-detail -> docs-main; Added %B flag for a big function;
     - 1.97: Add :(doc-ls co) -> documentable-keys -> '(cons cond); house keeping;
     - 1.96z Upd : def/doc, doc; Added doc-paras;
@@ -151,7 +152,7 @@
   - to-try
     - walker
 
-  - to-optimize:
+  - to-be-faster:
     - . xs -> xs
     - 1/2 -> 0.5
     - def-syn
@@ -162,6 +163,7 @@
     - ?: setq
     - 听说cond要按发生概率高低来排序
     - def/va: case-lambda needs 1~2X time more than original lambda
+    - atomp -> consp
 
   - to-debug:
     - (trace fib)?, assert&print, debug?, call/cc+assert+return.false ...
@@ -238,7 +240,7 @@ Code:
 (def-syt defm ;define-macro <- define-syntax ;to-add (void)
   (syt-ruls ()
     ( [_ (f . args) body ...]
-      (defsyt f
+      (defsyt f ;
         ( [_ . args]
           (bgn body ...)
     ) ) )
@@ -1141,7 +1143,7 @@ to-test:
 ;(doc f-asd)
 (defsyt doc-paras
   ( [_ key] ;if fn? key
-    (doc-paras% ;<- get-htab-value
+    (doc-paras% ;<- htab-value
       (if (htab/fn-args?) *htab/fn-args* *htab/fn-doc*)
       'key
   ) )
@@ -1151,22 +1153,22 @@ to-test:
 
 (defsyt doc-code ;-value -keys
   ( [_ key] ;if fn? key
-    (get-htab-value ;<- get-htab-value
+    (htab-value ;<- htab-value
       (if (htab/fn-args?) *htab/fn-args* *htab/fn-doc*)
       'key
   ) )
   ( [_ key htab]
-    (get-htab-value htab 'key) ;<- doc%
+    (htab-value htab 'key) ;<- doc%
 ) )
 
 (defsyt doc-main
   ( [_ key]
-    (get-htab-kv
+    (htab-kv
       (if (htab/fn-args?) *htab/fn-args* *htab/fn-doc*)
       'key
   ) )
   ( [_ key htab]
-    (get-htab-kv htab 'key)
+    (htab-kv htab 'key)
 ) )
 
 (ali doc doc-main)
@@ -1174,7 +1176,7 @@ to-test:
 ;(doc-ls co) -> documentable-keys -> '(cons cond)
 (defsyt doc-ls
   ( [_ contain htab] ;defm/va
-    (filter (rcurry sym/with-nocase? 'contain)
+    (filter (rcurry with?-nocase 'contain)
       (map car (docs-main htab)) ;
   ) )
   ( [_ contain]
@@ -3150,7 +3152,7 @@ to-test:
   (if (< n 0) 0
     (_ n)
 ) )
-;(cost (fib0 42)) ;realtime = 1.111~1.188 s
+;(cost (fib0 42)) ;realtime = 1.111~1.173 s
 
 (def (fib1 n) ;gmp: (fib 1E) just 1s
   ;(let ([st(clock)] [1st Fal])
@@ -3818,7 +3820,7 @@ to-test:
   (_ ht)
 )
 
-(def (doc% ht key) ;not get-htab-value
+(def (doc% ht key) ;not htab-value
   (def (_ ht)
     (if (nilp ht) nil
       (if (eq key (caar ht))
@@ -3846,7 +3848,7 @@ to-test:
   ) ) )
   (_ ht)
 )
-(def (get-htab-value ht key)
+(def (htab-value ht key)
   (def (_ ht)
     (if (nilp ht) nil
       (if (eq key (caar ht))
@@ -3855,7 +3857,7 @@ to-test:
   ) ) )
   (_ ht)
 )
-(def (get-htab-kv ht key)
+(def (htab-kv ht key)
   (def (_ ht)
     (if (nilp ht) nil
       (if (eq key (caar ht))
@@ -3864,21 +3866,21 @@ to-test:
   ) ) )
   (_ ht)
 )
-(def (get-htab-kvs htab key-with)
+(def (htab-kvs htab key-with)
   (filter
-    (compose (rcurry sym/with-nocase? key-with) car)
+    (compose (rcurry with?-nocase key-with) car)
     htab
 ) )
-(def (get-htab-keys htab key-with)
+(def (htab-keys htab key-with)
   (filter
-    (rcurry sym/with-nocase? key-with)
+    (rcurry with?-nocase key-with) ;
     (map car htab)
 ) )
-(def (get-htab-values htab key-with)
+(def (htab-values htab key-with)
   (map ;
     cadr
     (filter ;todo new filter-with-action
-      (compose (rcurry sym/with-nocase? key-with) car)
+      (compose (rcurry with?-nocase key-with) car)
       htab
 ) ) )
 ;(find-htab-key htab value  [eql])
@@ -4143,9 +4145,9 @@ to-test:
     (map (compose str->list sym->str) ;str-downcase
       (list s x) ;
 ) ) )
-(def/doc (sym/with-nocase? s x)
+(def/doc (with?-nocase s x)
   (redu (rcurry with? eq) ;
-    (map (compose str->list str-downcase sym->str) ;
+    (map (compose str->list str-downcase str) ;any<-sym
       (list s x) ;
 ) ) )
 (def/doc (sym/with-head? s x)
