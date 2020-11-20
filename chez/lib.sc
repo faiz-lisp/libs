@@ -1,10 +1,12 @@
-(define (version) "Chez-lib V1.97f")
+(define (version) "Chez-lib V1.97h")
 (define (git-url) "https://github.com/faiz-lisp/libs.git")
 
 #|
 # Chez-lib.sc - Written by Faiz
 
   - Update notes:
+    - 1.97h Add : (doc-add '(load-lib str)) (doc load-lib)
+    - 1.97g upd : add-to-htab with a ret expr
     - 1.97f Upd : sym/with-nocase? -> with?-nocase; get-htab-keys -> htab-keys;
     - 1.97e fast: via atomp ~> consp
     - 1.97c Add : htab-:kvs,keys,values
@@ -1082,26 +1084,43 @@ to-test:
 ) ) )
 
 ;(add-to-htab htab (list key value))
+; (defsyt add-to-htab
+  ; ( [_ ht child] ;! ;lam-false
+    ; (let ([key (car child)])
+      ; (if (! (htab/key-exist? key ht))
+        ; (rpush child ht) ;
+        ; (error "existed" key)
+; ) ) ) )
 (defsyt add-to-htab
-  ( [_ ht child] ;!
+  ( [_ ht child ret-if-exist]    
     (let ([key (car child)])
-      (if (! (htab/key-exist? key ht))
-        (rpush child ht) ;
-        (error "existed" key)
-) ) ) )
+      (def (_ ht) ;
+        (if (eq key (caar ht))
+          ret-if-exist
+          (if (cdr-nilp ht)
+            (set-cdr! ht (list child)) ;add/rpush
+            [_ (cdr ht)]
+      ) ) )
+      (if (nilp ht)
+        (setq ht (list child)) ;init
+        [_ ht]
+  ) ) )
+  ( [_ ht child]
+    (add-to-htab ht child (error "existed" (car child))) ;F
+) )
 
 (defsyt add-to-htab!
   ( [_ ht child]
     (let ([key (car child)])
       (def (_ ht) ;
         (if (eq key (caar ht))
-          (set-car! ht child) ;
+          (set-car! ht child) ;update
           (if (cdr-nilp ht)
-            (set-cdr! ht (list child)) ;
+            (set-cdr! ht (list child)) ;add/rpush
             [_ (cdr ht)]
       ) ) )
       (if (nilp ht)
-        (setq ht (list child)) ;
+        (setq ht (list child)) ;init
         [_ ht]
 ) ) ) )
 
@@ -1414,6 +1433,10 @@ to-test:
 ;Bug: when rec def/doc in def
 
 ;===
+
+(def/va (doc-add kv [db *htab/fn-args*])
+  (add-to-htab! db kv)
+)
 
 (def append!.ori append!) ;
 (def (append! xs . yz) ;?
@@ -2226,7 +2249,7 @@ to-test:
 ) )
 (def (echo . xs) (apply echo% (cons " " xs))) ;
 
-(defn mk-range% (s e p)
+(defn mk-range% (s e p) ;iota is faster
   (let ([g (if(> p 0) > <)])
     (def (_ ret cnt)
       (if (g s cnt) ret
@@ -2259,7 +2282,7 @@ to-test:
           ((nilp e) (_ 0 (1- n/s) f p res))
           (else
             (let ([m (f n/s p)])
-              (if ([if(> m n/s) < >] e n/s) ;
+              (if ([if(> m n/s) < >] e n/s) ;stru<?
                 res
                 (_ m e f p (rpush n/s res)) ;
       ) ) ) ) )
@@ -3980,7 +4003,8 @@ to-test:
   ) )
   (~ g ys)
 )
-;
+
+;(doc-add '(load-lib str))
 
 (load-lib "kernel32.dll") ;Beep
 (defc* GetCommandLineA () string get-command-line)
@@ -4158,7 +4182,6 @@ to-test:
 
 (def (syms) (environment-symbols (interaction-environment)))
 
-
 ;
 
 ;num2lis num2abc abc2num
@@ -4168,7 +4191,6 @@ to-test:
   ; (redu (curry map-all list)
     ; (nx->list n xs) )
 )
-
 
 
 ;unify -- onlisp?
@@ -4319,7 +4341,9 @@ to-test:
   (load (string-append *script-path* [(if (sym? file) symbol->string id) file]))
 )
 
+;====== doc ======
 
+(doc-add '(load-lib str))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
 
