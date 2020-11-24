@@ -1,16 +1,16 @@
-(define (version) "Chez-lib V1.97h")
+(define (version) "Chez-lib V1.97j")
 (define (git-url) "https://github.com/faiz-lisp/libs.git")
 
 #|
 # Chez-lib.sc - Written by Faiz
 
   - Update notes:
-    - 1.97h Add : (doc-add '(load-lib str)) (doc load-lib)
-    - 1.97g upd : add-to-htab with a ret expr
-    - 1.97f Upd : sym/with-nocase? -> with?-nocase; get-htab-keys -> htab-keys;
+    - 1.97h Add : (doc-add '(load-lib str)) (doc load-lib)~>'(load-lib str)
+    - 1.97g upd  : add-to-htab with a ret expr
+    - 1.97f Upd : sym/with-nocase? ~> with?-nocase; get-htab-keys -> htab-keys;
     - 1.97e fast: via atomp ~> consp
     - 1.97c Add : htab-:kvs,keys,values
-    - 1.97b Upd : docs-detail -> docs-main; Added %B flag for a big function;
+    - 1.97b Upd : docs-detail -> docs-main; Added %B flag for a function cost too much/big
     - 1.97: Add :(doc-ls co) -> documentable-keys -> '(cons cond); house keeping;
     - 1.96z Upd : def/doc, doc; Added doc-paras;
     - 1.96: Add : def/doc, (doc myfunc1), docs
@@ -20,7 +20,7 @@
     - 1.93: Simp: fast-expt, (_ g x [n 1])
     - 1.92b Add : my git-url
     - 1.92: Upd : api-with: symbol -> macro
-    - 1.91: add : logic for dividing vowels in japanese; add T, F;
+    - 1.91: add : logic for dividing vowels in japanese; T, F;
     - 1.90: Add : data of jp, doremi
     - 1.89: Word: syn -> syt
     - 1.88: Add : divide-at
@@ -211,7 +211,7 @@ Code:
 (ali   syn-case syntax-case)
 (alias case-lam case-lambda)
 (alias els      else)
-(alias fn       lambda)
+(ali   fn       lambda)
 (alias progn    begin)
 (alias vec      vector)
 (alias vecp     vector?)
@@ -250,10 +250,10 @@ Code:
       (defm (f args ...) body ...)
 ) ) )
 
-(alias nilp  null?)
-(alias first car)
-(alias rest  cdr)
-(alias eq    eq?)
+(ali   nilp  null?)
+(ali   first car)
+(ali   rest  cdr)
+(ali   eq    eq?)
 (alias equal equal?)
 (alias eql   equal?)
 (alias ==    equal?)
@@ -266,7 +266,7 @@ Code:
 (alias num?   number?)
 (alias str?   string?)
 (alias lisp   list?)
-(alias consp  pair?)
+(ali   consp  pair?)
 (alias pairp  pair?)
 (alias fn?    procedure?)
 (alias voidp  void?) ;voip
@@ -292,7 +292,7 @@ Code:
 ;(def (sys cmd) (zero? (system cmd)))
 (alias q exit)
 (alias str-append string-append)
-(alias len length)
+(ali   len length)
 (alias newln newline)
 (alias nil?  null?)
 
@@ -1072,7 +1072,6 @@ to-test:
 ) )
 
 
-
 ; htab 1/2
 
 ;(mk-htab htab (list ))
@@ -1083,14 +1082,6 @@ to-test:
       nil ;(error "existed" 'var)
 ) ) )
 
-;(add-to-htab htab (list key value))
-; (defsyt add-to-htab
-  ; ( [_ ht child] ;! ;lam-false
-    ; (let ([key (car child)])
-      ; (if (! (htab/key-exist? key ht))
-        ; (rpush child ht) ;
-        ; (error "existed" key)
-; ) ) ) )
 (defsyt add-to-htab
   ( [_ ht child ret-if-exist]    
     (let ([key (car child)])
@@ -1112,9 +1103,9 @@ to-test:
 (defsyt add-to-htab!
   ( [_ ht child]
     (let ([key (car child)])
-      (def (_ ht) ;
+      (def (_ ht)
         (if (eq key (caar ht))
-          (set-car! ht child) ;update
+          (set-car! ht child) ;update!
           (if (cdr-nilp ht)
             (set-cdr! ht (list child)) ;add/rpush
             [_ (cdr ht)]
@@ -1124,46 +1115,35 @@ to-test:
         [_ ht]
 ) ) ) )
 
-;(car body) if-is string, save to (doc)
+;X(car body) if-is string, save to (doc)
 (def-syt def/doc
   (syt-ruls ()
-    ( [_ x] (define x *v) ) ;
+    ( [_ x] (define x *v) )
     
-    ;(def/doc (f-asd) "f-asd usage: ..." 123)
-    ;(def/doc (asd a) 'doc (list a)) (doc asd)~>(asd a)
-    ; ( [_ (g . args) doc body ...]
-      ; (bgn
-        ; (if ;[and (!(exception? (try doc)))
-          ; [str? doc]
-          ; (add-to-htab! *htab/fn-doc* '(g doc))
-          ; (add-to-htab! *htab/fn-doc* `(g ,[raw (g . args)])) )
-        ; (define (g . args) body ...)
-    ; ) )
     ( [_ (g . args) body ...]
       (begin ;
-        ;(add-to-htab! *htab/fn-args* `,[raw (g . args)]) ;
-        (add-to-htab! *htab/fn-args* `,[raw (g (lam args body ...))]) ;
+        ;(add-to-htab! *htab/fn-lam* `,[raw (g . args)])
+        (add-to-htab! *htab/fn-lam* `,[raw (g (lam args body ...))]) ;
         (define (g . args) body ...)
-    ) )    
-    ;(def/doc (asd a) (list a)) (doc asd) ~> (asd a) ~> (lam (a) ...)
+    ) )
+    ; (def/doc (asd a) (list a)) (doc asd)~>(lam (a) ...)
     
     ; ( [_ x doc e]    
       ; (define x e) )
     ( [_ x e]
       (begin
-        (add-to-htab! *htab/fn-args* `,[raw (x e)])
+        (add-to-htab! *htab/fn-lam* `,[raw (x e)])
         (define x e) ;(def& x e last-action?)
 ) ) ) )
 ;doc-code doc-paras
 
 (ali def define*)
-;(ali def def/doc) ;out of memory
 
 ;(doc f-asd)
 (defsyt doc-paras
   ( [_ key] ;if fn? key
     (doc-paras% ;<- htab-value
-      (if (htab/fn-args?) *htab/fn-args* *htab/fn-doc*)
+      (if (htab/fn-lam?) *htab/fn-lam* *htab/fn-doc*)
       'key
   ) )
   ( [_ key htab]
@@ -1173,7 +1153,7 @@ to-test:
 (defsyt doc-code ;-value -keys
   ( [_ key] ;if fn? key
     (htab-value ;<- htab-value
-      (if (htab/fn-args?) *htab/fn-args* *htab/fn-doc*)
+      (if (htab/fn-lam?) *htab/fn-lam* *htab/fn-doc*)
       'key
   ) )
   ( [_ key htab]
@@ -1183,7 +1163,7 @@ to-test:
 (defsyt doc-main
   ( [_ key]
     (htab-kv
-      (if (htab/fn-args?) *htab/fn-args* *htab/fn-doc*)
+      (if (htab/fn-lam?) *htab/fn-lam* *htab/fn-doc*)
       'key
   ) )
   ( [_ key htab]
@@ -1199,7 +1179,7 @@ to-test:
       (map car (docs-main htab)) ;
   ) )
   ( [_ contain]
-    (doc-ls contain [if (htab/fn-args?) *htab/fn-args* *htab/fn-doc*]) ;
+    (doc-ls contain [if (htab/fn-lam?) *htab/fn-lam* *htab/fn-doc*]) ;
 ) )
 
 
@@ -1318,6 +1298,7 @@ to-test:
     ([_ v name (e ...) ...] ;v for xsValue, name for aux-info
       (pmatch-aux name v (e ...) ...)
 ) ) )
+;
 
 
 (ali chk fix-chk)
@@ -1423,10 +1404,10 @@ to-test:
 
 ; doc 1/2 flag
 
-(define (htab/fn-args?) T) ;
+(define (htab/fn-lam?) T) ;
 
-(if (htab/fn-args?)
-  (mk-htab *htab/fn-args* nil) ;
+(if (htab/fn-lam?)
+  (mk-htab *htab/fn-lam* nil) ;
   (mk-htab *htab/fn-doc* nil)
 )
 
@@ -1434,7 +1415,7 @@ to-test:
 
 ;===
 
-(def/va (doc-add kv [db *htab/fn-args*])
+(def/va (doc-add kv [db *htab/fn-lam*])
   (add-to-htab! db kv)
 )
 
@@ -2376,10 +2357,10 @@ to-test:
   (_ xs iz)
 )
 
-(defn char->string(x) (list->string(li x)))
+(defn char->string (x) (list->string (li x)))
 
 (def (str-explode s)
-  (map char->string(string->list s))
+  (map char->string (string->list s))
 )
 
 (def (xth xs . iths)
@@ -3423,8 +3404,8 @@ to-test:
 (defn-snest chur0 (f x)   x)
 (defn-snest chur1 (f x)   (f x))
 ;(defn-snest chur2 (f x)   ((compose f f) x))
-(defn-snest chur2 (f x)   ((lam[z] [f[f z]]) x)) ;
-(defn-snest chur3 (f x)   ((compose f f f) x))
+(defn-snest chur2 (f x)   ([lam (z) (f [f z])] x)) ;
+(defn-snest chur3 (f x)   ([compose f f f] x))
 
 (def (mk-chur num)
   (lam (f)
@@ -3452,12 +3433,12 @@ to-test:
     id
 ) )
 
-(defn-snest chur-t (t f) t)
-(defn-snest chur-f (t f) f)
-(defn-snest chur-and (a b) ((a b) chur-f))
-(defn-snest chur-or (a b) ((a chur-t) b))
-(defn-snest chur-not (a) ((a chur-f) chur-t))
-(defn-snest chur-xor (a b) ((a (chur-not b)) b))
+(defn-snest chur-t   (t f) t)
+(defn-snest chur-f   (t f) f)
+(defn-snest chur-and (a b) [(a b) chur-f])
+(defn-snest chur-or  (a b) [(a chur-t) b])
+(defn-snest chur-not (a)   [(a chur-f) chur-t])
+(defn-snest chur-xor (a b) [(a (chur-not b)) b])
 
 ; pair = \a.\b.\c.c a b
 ; first = \p.p true
@@ -3819,10 +3800,10 @@ to-test:
 
 ; doc 2 for documentable
 
-(def/va (docs-main [ht (if (htab/fn-args?) *htab/fn-args* *htab/fn-doc*)]) ;
+(def/va (docs-main [ht (if (htab/fn-lam?) *htab/fn-lam* *htab/fn-doc*)]) ;
   ht
 )
-(def/va (docs [ht (if (htab/fn-args?) *htab/fn-args* *htab/fn-doc*)])
+(def/va (docs [ht (if (htab/fn-lam?) *htab/fn-lam* *htab/fn-doc*)])
   (map
     (lam (k)
       (cons k
@@ -4004,7 +3985,7 @@ to-test:
   (~ g ys)
 )
 
-;(doc-add '(load-lib str))
+;
 
 (load-lib "kernel32.dll") ;Beep
 (defc* GetCommandLineA () string get-command-line)
@@ -4343,7 +4324,7 @@ to-test:
 
 ;====== doc ======
 
-(doc-add '(load-lib str))
+(doc-add '(load-lib "x.dll"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
 

@@ -134,13 +134,14 @@
 
 ;
 
-(define (list . xs) xs) ;~
+;(define (list . xs) xs) ;@
 
 (define (rev xs)
   (define (_ xs ret)
     (if (null? xs) ret
-      (_ (cdr xs) [cons (car xs) ret])
-  ) )
+      (_ (cdr xs)
+         (cons (car xs) ret)
+  ) ) )
   (_ xs '())
 )
 
@@ -181,7 +182,7 @@
               [_ (cdr chs) '() (cons[lis->revstr tmp]ret)] ;
               [_ (cdr chs) (cons a tmp) ret]
       ) ) ) )
-      [rev(_ chs '[] '[])]
+      [rev (_ chs '[] '[])]
 ) ) )
 
 (define (string-divide-rhs-1 s sep) ;todo: str-sep

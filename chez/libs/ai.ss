@@ -1,19 +1,22 @@
+; AI
 
-
-;AI
-
-(def ReLU (curry max 0))
 (alias relu ReLU)
 
+;
+
+(def ReLU (curry max 0))
+
+;
+
 (defn sigmoid (x)
-  (/ (1+ [exp(- x)]))
+  (/ (1+ [exp (- x)]))
 )
 (defn swish (x)
   (* x (sigmoid x))
 )
 
-(def/defa (nonlin x (deriv Fal)) ;
-  (if (eql deriv Tru)
+(def/va (nonlin x [deriv F])
+  (if (eq deriv T)
     (* x [- 1 x])
     (sigmoid x)
 ) )
