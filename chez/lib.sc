@@ -1,10 +1,11 @@
-(define (version) "Chez-lib V1.97j")
+(define (version) "Chez-lib V1.97L")
 (define (git-url) "https://github.com/faiz-lisp/libs.git")
 
 #|
 # Chez-lib.sc - Written by Faiz
 
   - Update notes:
+    - 1.97L fix : for: map -> for-each; upd : tail=list-tail; add : tail%
     - 1.97h Add : (doc-add '(load-lib str)) (doc load-lib)~>'(load-lib str)
     - 1.97g upd  : add-to-htab with a ret expr
     - 1.97f Upd : sym/with-nocase? ~> with?-nocase; get-htab-keys -> htab-keys;
@@ -68,8 +69,7 @@
   - tofix:
     - (range 0 31270 529) is opposite
   - todo:
-    - ls
-    - api?
+    - lam/va
     - (deep-action/map/apply g xs [seq]): d-remov
     - to compatibale with linux
     - include
@@ -593,19 +593,19 @@ to-test:
       #'(def/va%3 g ori           (ret ...) (defas ...) body ...)
 ) ) )
 
-;(def/va (asd [a 1] s [d 3] f) (li a s d f)) ;=> (asd 'A 'S 'F)
+;todo: (def/va (asd [a 1] s [d 3] f) (li a s d f)) ;=> (asd 'A 'S 'F)
 #| To test:
- (defn/va asd ([a 1] [b 2] c) (li a b c)) ;(asd 3)
+ (defn/va asd ([a 1] [b 2] c) (li a b c)) ;(asd 3) ;c is nil or 3?
  (def/va (asd [a 1] [b 2] [c 3]) (li a b c)) ;(asd)
  (defn/va asd ([a 1] [b 2] [c 3]) (li a b c)) ;(asd)
 |#
 (defsyt def/va
-  ([_ (f x ...) body ...]
+  ( [_ (f x ...) body ...]
     (def/va%2 f (x ...) (x ...) () () body ...) ;
 ) )
 
 (defsyt defn/va
-  ([_ g (p ...) body ...]
+  ( [_ g (p ...) body ...]
     (def/va%2 g (p ...) (p ...) () () body ...)
 ) )
 (ali def/defa def/va)
@@ -631,19 +631,19 @@ to-test:
             [loop (cdr l)]
     ) ) ) )
     ( [_ xs as i body ...]
-      (map
+      (for-each
         (lambda (i) ;map has ret values
           body ...)
         xs
     ) )
         
     ( [_ (i : xs) body ...]
-      (map
+      (for-each
         (lam (i)
           body ...)
         xs ) )
     ( [_ (i in xs) body ...] ;
-      (map
+      (for-each
         (lam (i)
           body ... )
         xs ) )
@@ -1379,6 +1379,7 @@ to-test:
 
 (alias sleep c-sleep)
 (alias numofMidiOut midi-out-get-num-devs)
+(ali tail list-tail)
 
 ;===================== defs =======================
 
@@ -1948,22 +1949,26 @@ to-test:
   (_ xs ys nil)
 )
 
-(def (tail xs m) ;*
+(def (tail% xs m)
   (def (_ xs m)
-    (if* (nilp xs) nil
+    (if~
+      (nilp xs) nil
       (< m 1) xs
       [_ (cdr xs) (1- m)]
   ) )
   (_ xs m)
 )
 
-(def (head% xs m) ;
+(def (head% xs m)
   (def (_ xs n)
-    (if* [nilp xs] nil ;
-      [> n m] nil
-      (cons (car xs) [_ (cdr xs) (1+ n)]) ;
-  ) )
-  (_ xs 1)
+    (if~
+      [nilp xs] nil
+      [< n 1] nil
+      (cons
+        (car xs)
+        [_ (cdr xs) (1- n)]
+  ) ) )
+  (_ xs m)
 )
 
 (def (zip . xz) ;(_ '(1 2) '(2 3) '(3 4 5)) ~> '((1 2 3) (2 3 4))
@@ -2960,7 +2965,7 @@ to-test:
   (_ nil xs xs)
 )
 
-(def (combinations xs n)
+(def (combinations xs n) ;todo [full-combinations/subsets '(1 2)]~>'([1 2][1][2][])
   (def (_ xs n)
     (if~
       [eq n 0] nil
