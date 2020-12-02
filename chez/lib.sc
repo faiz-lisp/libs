@@ -1,4 +1,4 @@
-(define (version) "Chez-lib V1.97L")
+(define (version) "Chez-lib V1.97M")
 (define (git-url) "https://github.com/faiz-lisp/libs.git")
 
 #|
@@ -4256,18 +4256,18 @@ to-test:
 (setq *tab/jp/key-a-A* ;Xy: y: a i u e o ;z: n
  '( [  a あ ア][  i い イ][  u う ウ][  e え エ][  o お オ] ;ェ
     [ ka か カ][ ki き キ][ ku く ク][ ke け ケ][ ko こ コ] 
-    [ sa さ サ][ si し シ][ su す ス][ se せ セ][ so そ ソ] ;shi
+    [ sa さ サ][shi し シ][ su す ス][ se せ セ][ so そ ソ] ;shi/si?
     [ ta た タ][chi ち チ][tsu つ ツ][ te て テ][ to と ト] 
     [ na な ナ][ ni に ニ][ nu ぬ ヌ][ ne ね ネ][ no の ノ] 
     [ ha は ハ][ hi ひ ヒ][ fu ふ フ][ he へ ヘ][ ho ほ ホ] 
     [ ma ま マ][ mi み ミ][ mu む ム][ me め メ][ mo も モ] 
-    [ ya や ヤ][ yu ゆ ユ][ yo よ ヨ]                
+    [ ya や ヤ][ yi い イ][ yu ゆ ユ][ ye え エ][ yo よ ヨ] ;-i e
     [ ra ら ラ][ ri り リ][ ru る ル][ re れ レ][ ro ろ ロ]
-    [ wa わ ワ][ wo を ヲ]                           
+    [ wa わ ワ][ wi い イ][ wu う ウ][ we え エ][ wo を ヲ] ;-i u e
     [  n ん ン]                                      
     [ ga が ガ][ gi ぎ ギ][ gu ぐ グ][ ge げ ゲ][ go ご ゴ]
-    [ za ざ ザ][ zi じ ジ][ zu ず ズ][ ze ぜ ゼ][ zo ぞ ゾ]
-    [ da だ ダ][ di ぢ ヂ][ du づ ヅ][ de で デ][ do ど ド] ;,ji
+    [ za ざ ザ][ zi じ ジ][ zu ず ズ][ ze ぜ ゼ][ zo ぞ ゾ] ;,ji
+    [ da だ ダ][ di ぢ ヂ][ du づ ヅ][ de で デ][ do ど ド]
     [ ba ば バ][ bi び ビ][ bu ぶ ブ][ be べ ベ][ bo ぼ ボ]
     [ pa ぱ パ][ pi ぴ ピ][ pu ぷ プ][ pe ぺ ペ][ po ぽ ポ]
 ) )
