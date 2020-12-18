@@ -1,18 +1,19 @@
-(define (version) "Chez-lib V1.97M")
+(define (version) "Chez-lib V1.97N")
 (define (git-url) "https://github.com/faiz-lisp/libs.git")
 
 #|
 # Chez-lib.sc - Written by Faiz
 
   - Update notes:
+    - 1.97N add : def-ffi, shell-execute
     - 1.97L fix : for: map -> for-each; upd : tail=list-tail; add : tail%
     - 1.97h Add : (doc-add '(load-lib str)) (doc load-lib)~>'(load-lib str)
-    - 1.97g upd  : add-to-htab with a ret expr
+    - 1.97g upd  : add-to-htab with a return expr
     - 1.97f Upd : sym/with-nocase? ~> with?-nocase; get-htab-keys -> htab-keys;
     - 1.97e fast: via atomp ~> consp
     - 1.97c Add : htab-:kvs,keys,values
     - 1.97b Upd : docs-detail -> docs-main; Added %B flag for a function cost too much/big
-    - 1.97: Add :(doc-ls co) -> documentable-keys -> '(cons cond); house keeping;
+    - 1.97: Add : (doc-ls co) -> documentable-keys -> '(cons cond); house keeping;
     - 1.96z Upd : def/doc, doc; Added doc-paras;
     - 1.96: Add : def/doc, (doc myfunc1), docs
     - 1.95c Upd : ./
@@ -21,7 +22,7 @@
     - 1.93: Simp: fast-expt, (_ g x [n 1])
     - 1.92b Add : my git-url
     - 1.92: Upd : api-with: symbol -> macro
-    - 1.91: add : logic for dividing vowels in japanese; T, F;
+    - 1.91: add : logic for divided vowels in japanese; T, F;
     - 1.90: Add : data of jp, doremi
     - 1.89: Word: syn -> syt
     - 1.88: Add : divide-at
@@ -36,7 +37,7 @@
 
   - prefixes:
     - sy/ syt/ for syntax
-    - ~ returns a reverse result
+    - ~ returns a reversed result
 
   - vars:
     - ~var: temp variety
@@ -53,7 +54,7 @@
     - ? eval->reduce->compose/curry
     - strcat
     - remove
-    - lis->vec vec->lis
+    - list->vec vec->list
   - fast>:
     - consp -> atomp, nilp, lisp, eq
     - sort, .., cond if, .., redu, map, .., append;
@@ -195,7 +196,7 @@ Code:
 ;#%car = ($primitive car) = ($primitive 1 car) = car
 ;#%car = ($primitive car) = ($primitive 1 car) = car
 
-;================= alias and defsyt ===================
+;================= aliases and syntaxes ===================
 
 (alias ali      alias)
 (alias imp      import)
@@ -1337,15 +1338,15 @@ to-test:
 
 
 
-(alias callnest call-nest)
+(alias callnest  call-nest)
 (alias callsnest call-snest)
 
 ; system
 
 ;ffi
 
-(alias load-lib load-shared-object)
-(alias ffi? foreign-entry?) ;
+(ali load-lib load-shared-object)
+(ali ffi? foreign-entry?) ;
 (alias ffi foreign-procedure)
 
 ;CFName nArgs tyRet fname? ;(defc Beep (void* void*) bool [beep]) ;(api: Beep 2 bool [])? ;(fname-sym CFName)
@@ -1363,6 +1364,28 @@ to-test:
     (def f (ffi (sym->str 'api) args ret)) ) ;outer-proc ;todo f?
   ( [_ api args ret f rems]
     (defc* api args ret f)
+) )
+
+;[x] (def-ffi (c-asd a s d) [bool Asd (int char bool)] "usage")
+;[x] (def-ffi c-asd [bool Asd (int char bool)] "usage")
+;[x] (def-ffi (bool Asd [int char bool]) "usage")
+;[x] (def-ffi (Asd (int char bool)) "usage")
+;[x] (def-ffi Asd "usage")
+(defsyt def-ffi
+  ( [_ (f . xs) (ty-ret api ty-args) body ...]
+    (def f (ffi (sym->str 'api) ty-args ty-ret)) )
+  ( [_ f (ty-ret api ty-args) comment ...]
+    (def f (ffi (sym->str 'api) ty-args ty-ret)) )
+    
+  ( [_ f (api ty-args) comment ...]
+    (def f (ffi (sym->str 'api) ty-args void*)) )  
+  ( [_ (ty-ret api ty-args) comment ...]
+    (def api (ffi (sym->str 'api) ty-args ty-ret)) )
+  ( [_ (api ty-args) comment ...]
+    (def api (ffi (sym->str 'api) ty-args void*)) ) ;
+  
+  ( [_ f comment ...]
+    (def-ffi f (void* f (void))) ;
 ) )
 
 (defsyt defc
@@ -1706,16 +1729,16 @@ to-test:
   (string-divide-rhs-1 s "/")
 )
 
-(def (str/sep sep . ss)
+(def (str/sep sep . ss) ;(redu (curry str/sep " ") (map str '(123 456 789)))
   (def (_ chz ret)
     (if (nilp chz) ret
       (let ([a (car chz)])
         (if [nilp a]
           [_ (cdr chz) ret]
-          [_ (cdr chz) (append a (cons sep ret))] ;
+          [_ (cdr chz) (append a (cons sep ret))] ;.
   ) ) ) )
-  (let ([chz [rev(map string->list ss)]])
-    (str(_ [cdr chz] [car chz]))
+  (let ([chz [rev (map string->list ss)]])
+    (str (_ [cdr chz] [car chz]))
 ) )
 
 (def (num2nth n)
@@ -3857,6 +3880,7 @@ to-test:
   ) ) )
   (_ ht)
 )
+
 (def (htab-value ht key)
   (def (_ ht)
     (if (nilp ht) nil
@@ -3996,6 +4020,9 @@ to-test:
 (defc* GetCommandLineA () string get-command-line)
 (defc beep (freq dura) void* Beep (void* void*))
 (defc c-sleep (ms) unsigned Sleep (unsigned) __collect_safe) ;(defc c-sleep Sleep 1) ;(ms) ;__collect_safe "sleep"
+
+(load-lib "shell32.dll")
+(def-ffi shell-execute (ShellExecuteA (int string string string string int)))
 
 (load-lib "msvcrt.dll")
 (defc void* clock ())
