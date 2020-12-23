@@ -1,10 +1,13 @@
-(define (version) "Chez-lib V1.97N")
-(define (git-url) "https://github.com/faiz-lisp/libs.git")
+(define (version) "Chez-lib V1.97Q") ;
+(define (git-url) "https://github.com/faiz-xxxx/libs.git") ;
 
 #|
-# Chez-lib.sc - Written by Faiz
+# Chez-lib.sc - written by Faiz
 
   - Update notes:
+    - 1.97Q Add : (trim '(1 2 1 2 1 3 1 2) '(1 2)) ~> '(1 3)
+    - 1.97P upd : upd : (str/sep " " 123 456), (str/sep% "-" '(123 "456"))
+    - 1.97O upd : (beep [456] [500]);\nadd : getcwd;
     - 1.97N add : def-ffi, shell-execute
     - 1.97L fix : for: map -> for-each; upd : tail=list-tail; add : tail%
     - 1.97h Add : (doc-add '(load-lib str)) (doc load-lib)~>'(load-lib str)
@@ -20,9 +23,8 @@
     - 1.95: Add : fold (_ f x xs), foldl-n (_ n fn xs), infix->prefix (_ xs)
     - 1.94: Add : self-act (_ pow 3 3) => (pow 3 3 3), rev-calc (_ pow 4) => 2
     - 1.93: Simp: fast-expt, (_ g x [n 1])
-    - 1.92b Add : my git-url
     - 1.92: Upd : api-with: symbol -> macro
-    - 1.91: add : logic for divided vowels in japanese; T, F;
+    - 1.91: add : logic for dividing vowels in japanese; T, F;
     - 1.90: Add : data of jp, doremi
     - 1.89: Word: syn -> syt
     - 1.88: Add : divide-at
@@ -119,7 +121,7 @@
     - (g x y)~> apply~= reduce-> curry
 
   - tolearn:
-    - duck-compiler:match
+    - match
     - import
     - fork-thread
     - profile
@@ -141,6 +143,7 @@
     - abs(fxnum) <= 2^29-1 (> 5E)
     - (eval-when (compile) (optimize-level 3))
   - learned
+    - collect ~= manual-gc
     - body... != body ...
     - let-values(<->)
     - def-syt doesnt supp recursion directly, but case
@@ -220,6 +223,10 @@ Code:
 (alias vec->lis vector->list)
 (alias lis->vec list->vector)
 (alias vec-len  vector-length)
+
+; defaults
+
+(alias trim trim-left)
 
 ; shorthands
 
@@ -307,6 +314,8 @@ Code:
 (alias redu~ redu~/fold) ;. (redu~ list '(1 2 3))
 (alias strhead! string-truncate!) ;
 ; To put aliases here
+
+(ali api-ls api-with)
 
 ;
 
@@ -1729,7 +1738,19 @@ to-test:
   (string-divide-rhs-1 s "/")
 )
 
-(def (str/sep sep . ss) ;(redu (curry str/sep " ") (map str '(123 456 789)))
+(def (str/sep% sep xs)
+  (def (_ chz ret)
+    (if (nilp chz) ret
+      (let ([a (car chz)])
+        (if (nilp a)
+          [_ (cdr chz) ret]
+          [_ (cdr chz) (append a (cons sep ret))] ;.
+  ) ) ) )
+  (let ([chz (rev (map [compose string->list str] xs))]) ;
+    (str (_ [cdr chz] [car chz]))
+) )
+
+(def (str/sep~ sep . ss) ;(redu (curry str/sep " ") (map str '(123 456 789)))
   (def (_ chz ret)
     (if (nilp chz) ret
       (let ([a (car chz)])
@@ -1737,9 +1758,13 @@ to-test:
           [_ (cdr chz) ret]
           [_ (cdr chz) (append a (cons sep ret))] ;.
   ) ) ) )
-  (let ([chz [rev (map string->list ss)]])
+  (let ([chz [rev (map string->list ss)]]) ;
     (str (_ [cdr chz] [car chz]))
 ) )
+
+(def (str/sep sep . xs)
+  (redu~ (curry str/sep~ sep) (map str xs))
+)
 
 (def (num2nth n)
   (str n
@@ -2003,6 +2028,36 @@ to-test:
     [rev(_ xz nil)]
 ) )
 
+;(trim-head '(1 2 1 2 3) '(1 2)) ;~> '(3)
+(def (trim-head xs trims) ;~ n ;opt: times?
+  (def (_ ys ts)
+    (if~
+      (nilp ts)
+        [trim-head ys trims] ;
+      (nilp ys) xs ;
+      (eq [car ys] [car ts])
+        [_ (cdr ys) (cdr ts)]
+      else xs
+  ) )
+  (_ xs trims)
+)
+
+;(trim-tail '(1 2 3) '(2 3)) ;~> '(1)
+(def (trim-tail xs ts) ;@
+  (let
+    ( [rxs (rev xs)]
+      [rts (rev ts)] )
+    [rev (trim-head rxs rts)] ;
+) )
+
+;(trim '(1 2 3 4 1 2) '(1 2)) ;~> '(3 4)
+(def (trim-left xs ts)
+  (trim-tail (trim-head xs ts) ts) ;
+)
+(def (trim-right xs ts) ;@
+  (trim-head (trim-tail xs ts) ts)
+)
+
 (defn list/nth- (xs) ;list->nth~ xs
   (def (_ xs n)
     (if (nilp xs) nil
@@ -2024,9 +2079,10 @@ to-test:
 
 (def (list- xs ys) ;@
   (def (_ xs ys)
-    (if* (nilp xs) nil
+    (if~
+      (nilp xs) nil
       (nilp ys) xs
-      [_ (remov-1(car ys)xs) (cdr ys)]
+      [_ (remov-1 (car ys) xs) (cdr ys)] ;
   ) )
   (_ xs ys)
 )
@@ -4018,7 +4074,7 @@ to-test:
 
 (load-lib "kernel32.dll") ;Beep
 (defc* GetCommandLineA () string get-command-line)
-(defc beep (freq dura) void* Beep (void* void*))
+(defc c-beep (freq dura) void* Beep (void* void*))
 (defc c-sleep (ms) unsigned Sleep (unsigned) __collect_safe) ;(defc c-sleep Sleep 1) ;(ms) ;__collect_safe "sleep"
 
 (load-lib "shell32.dll")
@@ -4033,6 +4089,12 @@ to-test:
 ;(def (main-args) (str-split (GetCommandLineA) spc))
 
 (def CLOCKS_PER_SEC 1000)
+(setq SW_MINIMIZE 6)
+
+;---
+
+(def/va (beep [freq 456] [dura 200]) (c-beep freq dura))
+
 (def (clock*)
   (inexact (/ (clock) CLOCKS_PER_SEC)) ;
 )
@@ -4331,6 +4393,7 @@ to-test:
 
 ;
 
+(def (getcwd) (str-replace (command-result "cd") "\r\n" ""))
 (setq *current-path* (str-replace (command-result "cd") "\r\n" "")) ; ?"Pro File"
 
 ; (def car car%) ;
@@ -4341,14 +4404,19 @@ to-test:
 
 ; how to refine?
 (set! *script-path* ;%
-  (car(string->path-file ;
-      (car(remove ""
-          (string-divide
-            (cadr(remove ""
-                (string-divide (get-command-line) " ") ) ) ;ng
-            "\""
-  ) ) ) ) ) ;bug if just use load
-)
+  (let
+    ( [tmp
+        (remove "" ;
+          (string-divide (get-command-line) " ")
+    ) ] )
+    (if (cdr-nilp tmp)
+      ".\\" ;          
+      (car (string->path-file ;
+          (car (remove ""
+              (string-divide
+                (cadr tmp) ;
+                "\""
+) ) ) ) ) ) ) ) ;bug if just use load
 
 (define (load-relatived file) ;
   (load (string-append *script-path* [(if (sym? file) symbol->string id) file]))

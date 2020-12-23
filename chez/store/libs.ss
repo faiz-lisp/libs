@@ -214,7 +214,7 @@
   (car(string->path-file
       (car(remove ""
           (string-divide
-            (cadr(remove ""
+            (cadr(remove "" ;
                 (string-divide (get-command-line) " ") ) )
             "\""
   ) ) ) ) ) ;bug if just use load

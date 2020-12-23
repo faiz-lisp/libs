@@ -1,0 +1,3 @@
+
+*.ls linguist-language=scheme
+*.sc linguist-language=scheme
