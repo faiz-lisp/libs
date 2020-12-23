@@ -1,10 +1,12 @@
-(define (version) "Chez-lib V1.97Q") ;
+(define (version) "Chez-lib V1.97S")
 (define (git-url) "https://github.com/faiz-xxxx/libs.git") ;
 
 #|
 # Chez-lib.sc - written by Faiz
 
   - Update notes:
+    - 1.97S Add : (str-trim-n "asdsadsasds" '("as" "ds")) ~> "a"
+    - 1.97R Add : (trim-n '(1 2 3 1 2 1 3 1 2) '([1 2] [3])) ~> '(1)
     - 1.97Q Add : (trim '(1 2 1 2 1 3 1 2) '(1 2)) ~> '(1 3)
     - 1.97P upd : upd : (str/sep " " 123 456), (str/sep% "-" '(123 "456"))
     - 1.97O upd : (beep [456] [500]);\nadd : getcwd;
@@ -226,7 +228,10 @@ Code:
 
 ; defaults
 
-(alias trim trim-left)
+(ali trim trim-left)
+(ali trim-n trim-left-n)
+(alias trim-head trim-head-1)
+(alias trim-tail trim-tail-1)
 
 ; shorthands
 
@@ -2021,33 +2026,33 @@ to-test:
 
 (def (zip . xz) ;(_ '(1 2) '(2 3) '(3 4 5)) ~> '((1 2 3) (2 3 4))
   (def (_ xz ret)
-    (if [nilp(car xz)] ret
+    (if [nilp (car xz)] ret
       [_ (map cdr xz) (cons (map car xz) ret)]
   ) )
   (if (nilp xz) nil
-    [rev(_ xz nil)]
+    [rev (_ xz nil)]
 ) )
 
 ;(trim-head '(1 2 1 2 3) '(1 2)) ;~> '(3)
-(def (trim-head xs trims) ;~ n ;opt: times?
+(def (trim-head-1 xs serial) ;~ n ;opt: times? ;trims-head?
   (def (_ ys ts)
     (if~
       (nilp ts)
-        [trim-head ys trims] ;
+        [trim-head-1 ys serial] ;
       (nilp ys) xs ;
       (eq [car ys] [car ts])
         [_ (cdr ys) (cdr ts)]
       else xs
   ) )
-  (_ xs trims)
+  (_ xs serial)
 )
 
 ;(trim-tail '(1 2 3) '(2 3)) ;~> '(1)
-(def (trim-tail xs ts) ;@
+(def (trim-tail-1 xs ts) ;@
   (let
     ( [rxs (rev xs)]
       [rts (rev ts)] )
-    [rev (trim-head rxs rts)] ;
+    [rev (trim-head-1 rxs rts)] ;
 ) )
 
 ;(trim '(1 2 3 4 1 2) '(1 2)) ;~> '(3 4)
@@ -2057,6 +2062,51 @@ to-test:
 (def (trim-right xs ts) ;@
   (trim-head (trim-tail xs ts) ts)
 )
+
+;
+
+(def/va (trim-head-1/flg xs serial [handled? F]) ;%flag ?
+  (def (_ ys ts flg)
+    (if~
+      (nilp ts)
+        [trim-head-1/flg ys serial T]
+      (nilp ys)
+        [list xs flg]
+      (eq [car ys] [car ts])
+        [_ (cdr ys) (cdr ts) flg] ;
+      else (list xs flg)
+  ) )
+  (_ xs serial handled?)
+)
+
+;todo (trim-head-n '(1 2 3 4 1 2 5) '([1 2][3 4]) F)
+(def/va (trim-head-n xs trims [handled? F]) ;once?
+  (def (_ xs+flg ts)
+    (let ([xs (car xs+flg)] [flg (cadr xs+flg)])
+      (if (nilp ts)    
+        (if flg
+          [trim-head-n xs trims F] ;
+          xs )
+        [_ (trim-head-1/flg xs (car ts) flg) (cdr ts)] ;
+  ) ) )
+  (_ (list xs handled?) trims)
+)
+;(trim-tail-n '(5 1 2 3 4 1 2) '([1 2][3 4]))
+(def/va (trim-tail-n xs trims [once? F])
+  (let
+    ( [rxs (rev xs)]
+      [rts (map rev trims)] )
+    [rev (trim-head-n rxs rts once?)]
+) )
+
+(def (trim-left-n xs trims)
+  (trim-tail-n (trim-head-n xs trims) trims) ;
+)
+(def (trim-right-n xs ts)
+  (trim-head-n (trim-tail-n xs ts) ts) ;
+)
+
+;
 
 (defn list/nth- (xs) ;list->nth~ xs
   (def (_ xs n)
@@ -2169,6 +2219,8 @@ to-test:
 
 ;elap cant print ""
 
+; string
+
 (def string-replace*
   (case-lam
     ([ss ori new num] ;(_ "asd~ddsa" "~d" "123" [-1])
@@ -2178,6 +2230,16 @@ to-test:
     ) )
     ([ss ori new] (string-replace* ss ori new -1))
 ) )
+
+(def/va (str-trim ss [s-trim " "]) ;_ "asasda" "as"
+  (str [trim (str->list ss) (str->list s-trim)])
+)
+
+;(str-trim-n "asdsadsads" '("as" "ds")) ;~> "adsa"
+(def/va (str-trim-n ss [trims '(" ")])
+  (str [trim-n (str->list ss) (map str->list trims)])
+)
+
 (def (command-result cmd)
   (let-values
     ( [ (in ou er id)
