@@ -1,25 +1,27 @@
-(define (version) "Chez-lib V1.97S")
+(define (version) "Chez-lib V1.97V")
 (define (git-url) "https://github.com/faiz-xxxx/libs.git") ;
 
 #|
-# Chez-lib.sc - written by Faiz
+# Chez-lib.sc (mainly for Windows) - written by Faiz
 
   - Update notes:
+    - 1.97V add : (deep-exist-match? [lam (x) (cn-char? x)] '((#\我) #\3)) ~> T
+    - 1.97U add : (hex 128) ~> "0x80", and upd so
+    - 1.97u upd : add extras to tab/jp
     - 1.97S Add : (str-trim-n "asdsadsasds" '("as" "ds")) ~> "a"
-    - 1.97R Add : (trim-n '(1 2 3 1 2 1 3 1 2) '([1 2] [3])) ~> '(1)
     - 1.97Q Add : (trim '(1 2 1 2 1 3 1 2) '(1 2)) ~> '(1 3)
     - 1.97P upd : upd : (str/sep " " 123 456), (str/sep% "-" '(123 "456"))
     - 1.97O upd : (beep [456] [500]);\nadd : getcwd;
     - 1.97N add : def-ffi, shell-execute
     - 1.97L fix : for: map -> for-each; upd : tail=list-tail; add : tail%
     - 1.97h Add : (doc-add '(load-lib str)) (doc load-lib)~>'(load-lib str)
-    - 1.97g upd  : add-to-htab with a return expr
+    - 1.97g upd : add-to-htab with a return expr
     - 1.97f Upd : sym/with-nocase? ~> with?-nocase; get-htab-keys -> htab-keys;
     - 1.97e fast: via atomp ~> consp
     - 1.97c Add : htab-:kvs,keys,values
-    - 1.97b Upd : docs-detail -> docs-main; Added %B flag for a function cost too much/big
+    - 1.97b upd : docs-detail -> docs-main; Added %B flag for a function cost too much/big
     - 1.97: Add : (doc-ls co) -> documentable-keys -> '(cons cond); house keeping;
-    - 1.96z Upd : def/doc, doc; Added doc-paras;
+    - 1.96z upd : def/doc, doc; Added doc-paras;
     - 1.96: Add : def/doc, (doc myfunc1), docs
     - 1.95c Upd : ./
     - 1.95: Add : fold (_ f x xs), foldl-n (_ n fn xs), infix->prefix (_ xs)
@@ -28,7 +30,7 @@
     - 1.92: Upd : api-with: symbol -> macro
     - 1.91: add : logic for dividing vowels in japanese; T, F;
     - 1.90: Add : data of jp, doremi
-    - 1.89: Word: syn -> syt
+    - 1.89: word: syn -> syt
     - 1.88: Add : divide-at
 
   - Suffixes:
@@ -238,6 +240,8 @@ Code:
 (ali list->str  list->string)
 (ali str->sym   string->symbol)
 (ali str->chs   string->list)
+(ali char->int  char->integer)
+(ali int->char  integer->char)
 
 (def-syt define*
   (syt-ruls ()
@@ -922,7 +926,7 @@ to-test:
   (if~
     (nilp 'xs) nil
     (cdr-nilp 'xs) (car 'xs)
-    'xs
+    'xs ;'|xs|
 ) )
 (alias lis2num list->num)
 (ali xn->list xn-mk-list)
@@ -2034,12 +2038,12 @@ to-test:
 ) )
 
 ;(trim-head '(1 2 1 2 3) '(1 2)) ;~> '(3)
-(def (trim-head-1 xs serial) ;~ n ;opt: times? ;trims-head?
+(def (trim-head-1 xs serial) ;n~ ;times?
   (def (_ ys ts)
     (if~
       (nilp ts)
-        [trim-head-1 ys serial] ;
-      (nilp ys) xs ;
+        [trim-head-1 ys serial]
+      (nilp ys) xs
       (eq [car ys] [car ts])
         [_ (cdr ys) (cdr ts)]
       else xs
@@ -2081,8 +2085,8 @@ to-test:
 
 ;todo (trim-head-n '(1 2 3 4 1 2 5) '([1 2][3 4]) F)
 (def/va (trim-head-n xs trims [handled? F]) ;once?
-  (def (_ xs+flg ts)
-    (let ([xs (car xs+flg)] [flg (cadr xs+flg)])
+  (def (_ xs.flg ts)
+    (let ([xs (car xs.flg)] [flg (cadr xs.flg)])
       (if (nilp ts)    
         (if flg
           [trim-head-n xs trims F] ;
@@ -2091,7 +2095,7 @@ to-test:
   ) ) )
   (_ (list xs handled?) trims)
 )
-;(trim-tail-n '(5 1 2 3 4 1 2) '([1 2][3 4]))
+;(trim-tail-n '(5 1 2 3 4 1 2) '([1 2][3 4])) ~> '(5)
 (def/va (trim-tail-n xs trims [once? F])
   (let
     ( [rxs (rev xs)]
@@ -2100,10 +2104,10 @@ to-test:
 ) )
 
 (def (trim-left-n xs trims)
-  (trim-tail-n (trim-head-n xs trims) trims) ;
+  (trim-tail-n (trim-head-n xs trims) trims)
 )
 (def (trim-right-n xs ts)
-  (trim-head-n (trim-tail-n xs ts) ts) ;
+  (trim-head-n (trim-tail-n xs ts) ts)
 )
 
 ;
@@ -2195,9 +2199,6 @@ to-test:
   (_ xs nths 1)
 )
 
-
-
-
 ;(list-replace '(#\a #\~ #\d #\x) '(#\~ #\d) '(#\1 #\2 #\3) 1)
 ;(list-replace '(#\a #\~ #\d #\x #\~ #\d) '(#\~ #\d) '(#\1 #\2 #\3))
 (def list-replace
@@ -2217,9 +2218,17 @@ to-test:
     ([xs ori new] (list-replace xs ori new -1 eql))
 ) )
 
+;replace-in-list xs 'x 'y
+
 ;elap cant print ""
 
 ; string
+
+(def (hex dec)
+  (if (num? dec)
+    (dec->hex dec)
+    dec
+) )
 
 (def string-replace*
   (case-lam
@@ -2247,10 +2256,6 @@ to-test:
           (buffer-mode block)
           (make-transcoder (utf-8-codec)) ) ] ;
     )
-    ; (let loop ([ret ""])
-      ; (if (eof-object? (peek-char ou)) ret ;\r\n?
-        ; [loop (str ret (read-char ou))] ;% strcat 
-    ; ) )
     (let loop ([ret nil])
       (if (eof-object? (peek-char ou))
         (str (rev ret)) ;\r\n?
@@ -2259,7 +2264,7 @@ to-test:
 
 
 
-(def [bool x] (if x Tru Fal)) ;nil? 0? ;does it conflit with bool type in ffi ?
+(def [bool x] (if x T F)) ;nil? 0? ;does it conflit with bool type in ffi ?
 
 (def (bool->string b) (?: (fal? b) "#f" "#t"))
 
@@ -2543,15 +2548,15 @@ to-test:
 )
 
 (def/doc (flat xs)
-  (def (rec x ret)
+  (def (_ x ret) ;
     (if~
       [nilp  x] ret
       [consp x]
-      (rec (car x)
-        (rec (cdr x) ret)) ;
+      (_ (car x)
+        (_ (cdr x) ret)) ;
       (cons x ret) ;
   ) )
-  (rec xs nil)
+  (_ xs nil)
 )
 
 (def/doc (deep-length xs)
@@ -4062,6 +4067,20 @@ to-test:
   (_ xs)
 )
 
+;(_ (lam (x) (cn-char? x)) '((#\我) #\3))
+(def (deep-exist-match? g xs)
+  (def (_ x flg)
+    (if~
+      [nilp  x] flg
+      [consp x]
+        (_ (car x)
+          [_ (cdr x) flg] )      
+      (if (g x) T
+        flg
+  ) ) )
+  (_ xs F)
+)
+
 ;todo: Dijkstra
 
 (define (memoize proc)
@@ -4275,25 +4294,25 @@ to-test:
 
 (def with-head?
   (case-lam
-    ([xs ys eql] ;(_ '(1 2 3 4) '(1 2/3)) ;-> Y/N
+    ( [xs ys eql] ;(_ '(1 2 3 4) '(1 2/3)) ;-> Y/N
       (def (_ xs ys)  
-        (if (nilp ys) T ;xs?
+        (if (nilp ys) T ;
           (if (nilp xs) F
             (if [eql (car xs) (car ys)]
               [_ (cdr xs) (cdr ys)]
               F
       ) ) ) )
       (_ xs ys))
-    ([xs ys]
+    ( [xs ys]
       (with-head? xs ys eql)
 ) ) )
 (def with? ;may need algo
   (case-lam
-    ( [xs ys eql] ;(_ '(1 2 3 4) '(2 3/4)) ;-> Y/N ;with/contain
+    ( [xs ys eql] ;(_ '(1 2 3 4) '(2 3/4)) ;-> Y/N ;with/contain-p
       (def (_ xs)
         (if (nilp xs) F
-          (if (with-head? xs ys eql) T ;xs?
-            [_ (cdr xs)] ;len?
+          (if (with-head? xs ys eql) T ;
+            [_ (cdr xs)] ;
       ) ) )
       (if (nilp ys) F
         (_ xs)
@@ -4363,9 +4382,9 @@ to-test:
 )
 (def (unify e1 e2 syms) ;(unify '(a b) '(x y) '[x y])
   (def (_ e1 e2)
-    (let ([bf 0][f1 0][f2 0][t1 0][t2 0][s1 0][s2 0][g1 0][g2 0]) ;
+    (let ([bf 0] [f1 0][f2 0] [t1 0][t2 0] [s1 0][s2 0] [g1 0][g2 0]) ;
       (cond
-        ( [or(atom e1)(atom e2)]
+        ( [or (atom e1)(atom e2)]
           (when [not(atom e1)] (setq  bf e1  e1 e2  e2 bf)) ;
           (cond
             ((equal e1 e2)                         '()) ;
@@ -4394,7 +4413,6 @@ to-test:
 ;(unify `(a b) `(b X) '(X)) ;?-> fail
 
 
-
 (def (sym->chs sym)
   (str->list (sym->str sym))
 )
@@ -4410,17 +4428,21 @@ to-test:
     [ sa さ サ][shi し シ][ su す ス][ se せ セ][ so そ ソ] ;shi/si?
     [ ta た タ][chi ち チ][tsu つ ツ][ te て テ][ to と ト] 
     [ na な ナ][ ni に ニ][ nu ぬ ヌ][ ne ね ネ][ no の ノ] 
-    [ ha は ハ][ hi ひ ヒ][ fu ふ フ][ he へ ヘ][ ho ほ ホ] 
-    [ ma ま マ][ mi み ミ][ mu む ム][ me め メ][ mo も モ] 
+    [ ha は ハ][ hi ひ ヒ][ fu ふ フ][ he へ ヘ][ ho ほ ホ] ;*
+    [ ma ま マ][ mi み ミ][ mu む ム][ me め メ][ mo も モ] ;* mu
     [ ya や ヤ][ yi い イ][ yu ゆ ユ][ ye え エ][ yo よ ヨ] ;-i e
-    [ ra ら ラ][ ri り リ][ ru る ル][ re れ レ][ ro ろ ロ]
-    [ wa わ ワ][ wi い イ][ wu う ウ][ we え エ][ wo を ヲ] ;-i u e
+    [ ra ら ラ][ ri り リ][ ru る ル][ re れ レ][ ro ろ ロ] ;*
+    [ wa わ ワ][ wi い イ][ wu う ウ][ we え エ][ wo を ヲ] ;-i u e ;* wo
     [  n ん ン]                                      
     [ ga が ガ][ gi ぎ ギ][ gu ぐ グ][ ge げ ゲ][ go ご ゴ]
     [ za ざ ザ][ zi じ ジ][ zu ず ズ][ ze ぜ ゼ][ zo ぞ ゾ] ;,ji
     [ da だ ダ][ di ぢ ヂ][ du づ ヅ][ de で デ][ do ど ド]
     [ ba ば バ][ bi び ビ][ bu ぶ ブ][ be べ ベ][ bo ぼ ボ]
     [ pa ぱ パ][ pi ぴ ピ][ pu ぷ プ][ pe ぺ ペ][ po ぽ ポ]
+    ;--- extra
+    [ si し シ]
+    [ ti ち チ][ tu つ ツ]
+    [ hu ふ フ]
 ) )
 
 (setq aud/doremi
@@ -4438,7 +4460,8 @@ to-test:
     (def (~ cs ret tmp flg) ;aft-n
       (if (nilp cs)
         (cons tmp ret)
-        (letn ( [a (car cs)] [d (cdr cs)]
+        (letn
+          ( [a (car cs)] [d (cdr cs)]
             [a.tmp (cons a tmp)] ) ;
           (if~
             (mem? a vowels)
@@ -4484,11 +4507,11 @@ to-test:
   (load (string-append *script-path* [(if (sym? file) symbol->string id) file]))
 )
 
-;====== doc ======
+; --- doc ---
 
 (doc-add '(load-lib "x.dll"))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+; ======
 
 (def (restore)
   (setq nil nil
@@ -4499,6 +4522,4 @@ to-test:
 ) )
 
 #|
-End Code.
-```
-|#
+ ;=== END === |#
