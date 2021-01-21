@@ -1,26 +1,28 @@
-(define (version) "Chez-lib V1.97V")
+(define (version) "Chez-lib V1.97W")
 (define (git-url) "https://github.com/faiz-xxxx/libs.git") ;
 
 #|
 # Chez-lib.sc (mainly for Windows) - written by Faiz
 
   - Update notes:
-    - 1.97V add : (deep-exist-match? [lam (x) (cn-char? x)] '((#\我) #\3)) ~> T
-    - 1.97U add : (hex 128) ~> "0x80", and upd so
-    - 1.97u upd : add extras to tab/jp
-    - 1.97S Add : (str-trim-n "asdsadsasds" '("as" "ds")) ~> "a"
-    - 1.97Q Add : (trim '(1 2 1 2 1 3 1 2) '(1 2)) ~> '(1 3)
-    - 1.97P upd : upd : (str/sep " " 123 456), (str/sep% "-" '(123 "456"))
-    - 1.97O upd : (beep [456] [500]);\nadd : getcwd;
-    - 1.97N add : def-ffi, shell-execute
-    - 1.97L fix : for: map -> for-each; upd : tail=list-tail; add : tail%
-    - 1.97h Add : (doc-add '(load-lib str)) (doc load-lib)~>'(load-lib str)
-    - 1.97g upd : add-to-htab with a return expr
-    - 1.97f Upd : sym/with-nocase? ~> with?-nocase; get-htab-keys -> htab-keys;
-    - 1.97e fast: via atomp ~> consp
-    - 1.97c Add : htab-:kvs,keys,values
-    - 1.97b upd : docs-detail -> docs-main; Added %B flag for a function cost too much/big
-    - 1.97: Add : (doc-ls co) -> documentable-keys -> '(cons cond); house keeping;
+    - 1.97
+      - W add : (deep& rev char-downcase '((#\a #\s) #\D)) ~> '(#\d (#\s #\a))
+      - V add : (deep-exist-match? [lam (x) (cn-char? x)] '((#\我) #\3)) ~> T
+      - U add : (hex 128) ~> "0x80", and upd so
+      - u upd : add extras to tab/jp
+      - S Add : (str-trim-n "asdsadsasds" '("as" "ds")) ~> "a"
+      - Q Add : (trim '(1 2 1 2 1 3 1 2) '(1 2)) ~> '(1 3)
+      - P upd : upd : (str/sep " " 123 456), (str/sep% "-" '(123 "456"))
+      - O upd : (beep [456] [500]);\nadd : getcwd;
+      - N add : def-ffi, shell-execute
+      - L fix : for: map -> for-each; upd : tail=list-tail; add : tail%
+      - h Add : (doc-add '(load-lib str)) (doc load-lib)~>'(load-lib str)
+      - g upd : add-to-htab with a return expr
+      - f Upd : sym/with-nocase? ~> with?-nocase; get-htab-keys -> htab-keys;
+      - e fast: via atomp ~> consp
+      - c Add : htab-:kvs,keys,values
+      - b upd : docs-detail -> docs-main; Added %B flag for a function cost too much/big
+      - 1.97: Add : (doc-ls co) -> documentable-keys -> '(cons cond); house keeping;
     - 1.96z upd : def/doc, doc; Added doc-paras;
     - 1.96: Add : def/doc, (doc myfunc1), docs
     - 1.95c Upd : ./
@@ -3148,6 +3150,17 @@ to-test:
       else xs
   ) )
   (d-rev xs)
+)
+(def (deep& func f xs)
+  (def (_ x)
+    (if~
+      [nilp  x] nil
+      [pair? x]
+      (map _
+        (func x) ) ;
+      else [f x]
+  ) )
+  (_ xs)
 )
 
 (def (group xs m) ;?(= m per) (group '(1 2 3 4 5 6) 3 1)
