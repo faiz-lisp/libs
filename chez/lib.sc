@@ -1,4 +1,4 @@
-(define (version) "Chez-lib V1.97W")
+(define (version) "Chez-lib V1.97X")
 (define (git-url) "https://github.com/faiz-xxxx/libs.git") ;
 
 #|
@@ -6,6 +6,7 @@
 
   - Update notes:
     - 1.97
+      - X upd : stru> < =
       - W add : (deep& rev char-downcase '((#\a #\s) #\D)) ~> '(#\d (#\s #\a))
       - V add : (deep-exist-match? [lam (x) (cn-char? x)] '((#\我) #\3)) ~> T
       - U add : (hex 128) ~> "0x80", and upd so
@@ -2676,8 +2677,10 @@ to-test:
   ) ) )
   (_ xs ys)
 )
-(defn stru>(x y) (mk<>= stru-cmp (li x y) '>))
-(defn stru<(x y) (mk<>= stru-cmp (li x y) '<))
+;(defn stru> (x y) (mk<>= stru-cmp (li x y) '>))
+(defn stru> (x y) (eq (stru-cmp x y) '>))
+(defn stru< (x y) (eq (stru-cmp x y) '<))
+(defn stru= (x y) (eq (stru-cmp x y) '=))
 
 (def (assert0 resl test)
   (echol
@@ -3151,7 +3154,7 @@ to-test:
   ) )
   (d-rev xs)
 )
-(def (deep& func f xs)
+(def (deep& func f xs) ;xs [func id] [f id]
   (def (_ x)
     (if~
       [nilp  x] nil
