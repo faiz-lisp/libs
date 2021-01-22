@@ -1,14 +1,18 @@
-(define (version) "Chez-lib V1.97X")
+(define (version) "Chez-lib V1.97Z")
 (define (git-url) "https://github.com/faiz-xxxx/libs.git") ;
 
 #|
 # Chez-lib.sc (mainly for Windows) - written by Faiz
 
   - Update notes:
+    - 1.98
+      - : upd : add in-range;
     - 1.97
+      - Z add : guenchi: (read-file "file.xx") ~> string
+      - Y upd : (ncdr '() 1) ~> nil
       - X upd : stru> < =
-      - W add : (deep& rev char-downcase '((#\a #\s) #\D)) ~> '(#\d (#\s #\a))
-      - V add : (deep-exist-match? [lam (x) (cn-char? x)] '((#\我) #\3)) ~> T
+      - w Add : (deep& rev char-downcase '((#\a #\s) #\D)) ~> '(#\d (#\s #\a))
+      - v Add : (deep-exist-match? [lam (x) (cn-char? x)] '((#\我) #\3)) ~> T
       - U add : (hex 128) ~> "0x80", and upd so
       - u upd : add extras to tab/jp
       - S Add : (str-trim-n "asdsadsasds" '("as" "ds")) ~> "a"
@@ -23,7 +27,7 @@
       - e fast: via atomp ~> consp
       - c Add : htab-:kvs,keys,values
       - b upd : docs-detail -> docs-main; Added %B flag for a function cost too much/big
-      - 1.97: Add : (doc-ls co) -> documentable-keys -> '(cons cond); house keeping;
+      - : Add : (doc-ls co) -> documentable-keys -> '(cons cond); house keeping;
     - 1.96z upd : def/doc, doc; Added doc-paras;
     - 1.96: Add : def/doc, (doc myfunc1), docs
     - 1.95c Upd : ./
@@ -2352,13 +2356,22 @@ to-test:
 ;ex
 
 (def (ncdr xs n)
-  (if*
+  (if~
     [< n 0]
      (head xs (+ (len xs) n)) ;@
     [> n 0]
-     (tail xs n) ;if outofrange?
+     (tail% xs n) ;consider if outofrange
     xs
 ) )
+
+; (def (ncdr% xs n)
+  ; (if~
+    ; [< n 0]
+     ; (head xs (+ (len xs) n)) ;@
+    ; [> n 0]
+     ; (tail% xs n) ;inc out-of-range
+    ; xs
+; ) )
 
 (def (call g . xs) (redu g xs)) ;
 (def (rcall% g . xs) (redu g (rev xs)))
@@ -2757,6 +2770,13 @@ to-test:
   (if [nilp (cdr xs)]
     (expt (car xs) 2) ;
     (fold-left expt (car xs) (cdr xs))
+) )
+
+(def/va (in-range num s e [lt <]) ;case?
+  (if~
+    [lt num s] F
+    [lt e num] F
+    T
 ) )
 
 (defn float->fix (flo) (flonum->fixnum [round flo]))
@@ -3467,6 +3487,16 @@ to-test:
 ) )
 
 ; file: load-file-cont-as-str
+
+(define (read-file file-name)
+  (let ([p (open-input-file file-name)]) ;
+    (let loop ([lst nil] [c (read-char p)])
+      (if [eof-object? c]
+        (begin 
+          (close-input-port p)
+          (list->string (reverse lst)) )
+        (loop (cons c lst) (read-char p))
+) ) ) )
 
 (def (save-file cont file)
   (if (file-exists? file) (delete-file file)) ;
@@ -4336,6 +4366,7 @@ to-test:
     ( [xs ys]
       (with? xs ys eql)
 ) ) )
+
 (def/doc (with-sym? s x) ;sym/with?
   (redu (rcurry with? eq) ;
     (map (compose str->list sym->str) ;str-downcase
