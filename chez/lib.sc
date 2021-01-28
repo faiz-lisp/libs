@@ -1,4 +1,4 @@
-(define (version) "Chez-lib V1.97Z")
+(define (version) "Chez-lib V1.98-B")
 (define (git-url) "https://github.com/faiz-xxxx/libs.git") ;
 
 #|
@@ -6,6 +6,8 @@
 
   - Update notes:
     - 1.98
+      - B add : (lam/lams ([(a) b] . xs) [append (list a b) xs])
+      - a upd : VX.XX-X
       - : upd : add in-range;
     - 1.97
       - Z add : guenchi: (read-file "file.xx") ~> string
@@ -592,7 +594,7 @@ to-test:
   (li a s d f))
 |#
 (defsyt def/va%3
-  ([_ g ori [(a b) ...] (defas ...) body ...]
+  ( [_ g ori [(a b) ...] (defas ...) body ...]
     (def/va%4
       g
       [(a b) ...]
@@ -611,28 +613,26 @@ to-test:
 |#
 (def-syt (def/va%2 stx)
   (syt-case stx ()
-    ([_ g ori (x y ...) (ret ...) [defas ...]  body ...] (identifier? #'x)
-      #'(def/va%2 g ori (y   ...) (ret ... [x x]) (defas   ...) body ...) ) ;
-    ([_ g ori (x y ...) (ret ...) [defas ...]  body ...]
-      #'(def/va%2 g ori (y   ...) (ret ... x    ) (x defas ...) body ...) )
-    ([_ g ori (       ) (ret ...) [defas ...]  body ...]
-      #'(def/va%3 g ori           (ret ...) (defas ...) body ...)
+    ( [_          g ori (x y ...) (ret ...      ) [  defas ...] body ...] (identifier? #'x)
+      #'(def/va%2 g ori (  y ...) (ret ... [x x]) [  defas ...] body ...)
+    ) ;
+    ( [_          g ori (x y ...) (ret ...      ) [  defas ...] body ...]
+      #'(def/va%2 g ori (  y ...) (ret ...  x   ) [x defas ...] body ...)
+    )
+    ( [_          g ori (       ) (ret ...      ) [  defas ...] body ...]
+      #'(def/va%3 g ori           (ret ...      ) [  defas ...] body ...)
 ) ) )
 
-;todo: (def/va (asd [a 1] s [d 3] f) (li a s d f)) ;=> (asd 'A 'S 'F)
-#| To test:
- (defn/va asd ([a 1] [b 2] c) (li a b c)) ;(asd 3) ;c is nil or 3?
- (def/va (asd [a 1] [b 2] [c 3]) (li a b c)) ;(asd)
- (defn/va asd ([a 1] [b 2] [c 3]) (li a b c)) ;(asd)
-|#
+;to do: (def/va (asd [a 1] s [d 3] f) (li a s d f)) ;=> (asd 'A 'S 'F)
+;to test: (def/va (asd [a 1] [b 2] [c 3]) (li a b c)) ;(asd)
 (defsyt def/va
   ( [_ (f x ...) body ...]
-    (def/va%2 f (x ...) (x ...) () () body ...) ;
+    (def/va%2 f (x ...) (x ...) () [] body ...) ;
 ) )
 
 (defsyt defn/va
   ( [_ g (p ...) body ...]
-    (def/va%2 g (p ...) (p ...) () () body ...)
+    (def/va%2 g (p ...) (p ...) () [] body ...)
 ) )
 (ali def/defa def/va)
 ;test: (def/va (sublis xs [s 0] n) [head(tail xs s)n]) (sublis '(1 2 3) 2)
@@ -778,9 +778,9 @@ to-test:
   ( [_ () (ret ...)]
     [ret ...] )
   ( [_ (x) (ret ...)]
-    [lam(x) [ret ...]] )
+    [lam (x) [ret ...]] )
   ( [_ (x ys ...) (ret ...)]
-    [lam(x) (lam-nest% (ys ...) [ret ...])] ) ;
+    [lam (x) (lam-nest% (ys ...) [ret ...])] ) ;
 )
 (defsyt lam-rnest%
   ( [_ () (ret ...)]
@@ -1097,6 +1097,16 @@ to-test:
     (guard [x (else x)] exp) ;(exception? #condition) -> *t
 ) )
 
+;(def asd (lam/lams ([(a) b] . xs) [append (list a b) xs])) ([(asd 1) 2] 3 4)
+(def-syt (lam/lams stx)
+  (syt-case stx ()
+    ( [_ (a . xs) body ...] (identifier? #'a)
+      #'(lam (a . xs) body ...) ) 
+    ( [_ (a . xs) body ...]
+      #'[lam/lams a (lam xs body ...)] )
+    ( [_ () body ...]
+      #'(lam () body ...)
+) ) )
 
 ; htab 1/2
 
@@ -1164,6 +1174,7 @@ to-test:
 ;doc-code doc-paras
 
 (ali def define*)
+
 
 ;(doc f-asd)
 (defsyt doc-paras
@@ -4550,9 +4561,11 @@ to-test:
                 "\""
 ) ) ) ) ) ) ) ) ;bug if just use load
 
-(define (load-relatived file) ;
-  (load (string-append *script-path* [(if (sym? file) symbol->string id) file]))
-)
+(define (load-relatived file)
+  (load
+    (string-append *script-path* ;
+      [(if (sym? file) symbol->string id) file]
+) ) )
 
 ; --- doc ---
 
