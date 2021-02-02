@@ -1,12 +1,8 @@
 
+(ali permu permutation)
 
-(def (most% g xs . yz) ;(most (lam(l r)(?(> l r)l r)) 1 2 3)
-  (def (_ xs yz)
-    (if (nilp yz) xs
-      (_ [g xs (car yz)] (cdr yz))        
-  ) )
-  (_ xs yz)
-)
+;---
+
 (def (most g xz) ;(most (lam(l r)(?(> l r)l r)) '(1 2 3))
   (def (_ xs yz)
     (cond [(nilp yz) xs] ;faiz chk last time
@@ -23,27 +19,30 @@
     xz
 ) )
 
-
 (defn r-merge (xs ys) ;%
   (let ([m (len xs)] [n (len ys)])
     (if [>= m n] (ncdr xs [- n m])
       (append xs (ncdr ys m))
 ) ) )
-(def l-merge (swap-para r-merge))
 
+(def l-merge (swap-para r-merge))
 
 (defn tru? (b)
   (if (eq *t b) *t *f)
 )
+
 (defn fal? (b)
   (if (eq *f b) *t *f)
 )
+
 (defn neq (x y) (not(eq x y)) )
+
 (defn !eql(x y) (not(eql x y)) )
 
 (defn tyeq (x y)
   (eq(ty x)(ty y))
 )
+
 (defn ty-neq (x y)
   (neq(ty x)(ty y))
 )
@@ -72,11 +71,13 @@
       ) )
       nil ;
 ) ) )
+
 (defn mk<>= (f xs cmp)
   (let ([resl(redu f xs)])
     (if (nilp resl) nil
       (eq resl cmp)
 ) ) )
+
 (defn atom>(x y) (mk<>= atom-cmp (li x y) '>))
 (defn atom<(x y) (mk<>= atom-cmp (li x y) '<))
 
@@ -100,6 +101,7 @@
   ) ) ) ) ) ) )
   (_ xs ys)
 )
+
 (defn stru>(x y) (mk<>= stru-cmp (li x y) '>))
 (defn stru<(x y) (mk<>= stru-cmp (li x y) '<))
 
@@ -128,7 +130,6 @@
   ) ) ) )
   (_ nil xs xs)
 )
-(ali permu permutation)
 
 (def_ (combinations items k)
   (cond
@@ -153,7 +154,6 @@
       (append rest
         (map [curry cons (car xs)] rest)
 ) ) ) )
-
 
 ;algo
 
@@ -202,20 +202,19 @@
     (_ (car ns) 1 (cdr ns))
 ) )
 
-
 (defn_ exist-cond? (g x xs)
   (if (nilp xs) *f ;<-nil
     (let ([a (car xs)])
       (if (g x a) *t
         [_ g x (cdr xs)]
 ) ) ) )
+
 (defn_ exist-relate? (g xs)
   (if (nilp xs) *f
     (let ([b (exist-cond? g (car xs) (cdr xs))])
       (if b *t
         [_ g (cdr xs)]
 ) ) ) )
-
 
 ;(alias defnest defn-nest)
 
@@ -238,3 +237,12 @@
 
 ;todo: Dijkstra
 
+;--- inner
+
+(def (most% g xs . yz) ;(most (lam(l r)(?(> l r)l r)) 1 2 3)
+  (def (_ xs yz)
+    (if (nilp yz) xs
+      (_ [g xs (car yz)] (cdr yz))        
+  ) )
+  (_ xs yz)
+)

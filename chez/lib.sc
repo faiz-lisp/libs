@@ -1,4 +1,4 @@
-(define (version) "Chez-lib V1.98-B")
+(define (version) "Chez-lib V1.98-C")
 (define (git-url) "https://github.com/faiz-xxxx/libs.git") ;
 
 #|
@@ -6,7 +6,8 @@
 
   - Update notes:
     - 1.98
-      - B add : (lam/lams ([(a) b] . xs) [append (list a b) xs])
+      - C add : (list/seps '(1 2 3) '(4 5)) ~> '(1 4 5 2 4 5 3)
+      - B add : (lam/lams ([(a) b] c . xs) [append (list a b c) xs])
       - a upd : VX.XX-X
       - : upd : add in-range;
     - 1.97
@@ -1083,14 +1084,9 @@ to-test:
 ) ) )
 
 (alias vnilp vec-nilp)
-
 (alias vecons vec-cons)
-
 (alias veconz vec-conz)
-
 (alias vecdr vec-cdr)
-
-;
 
 (defsyt try
   ( [_ exp]
@@ -1100,12 +1096,12 @@ to-test:
 ;(def asd (lam/lams ([(a) b] . xs) [append (list a b) xs])) ([(asd 1) 2] 3 4)
 (def-syt (lam/lams stx)
   (syt-case stx ()
+    ( [_ () body ...]
+      #'(lam () body ...) )
     ( [_ (a . xs) body ...] (identifier? #'a)
       #'(lam (a . xs) body ...) ) 
     ( [_ (a . xs) body ...]
-      #'[lam/lams a (lam xs body ...)] )
-    ( [_ () body ...]
-      #'(lam () body ...)
+      #'[lam/lams a (lam xs body ...)]
 ) ) )
 
 ; htab 1/2
@@ -1925,6 +1921,17 @@ to-test:
 ; list
 
 (def cdr-nilp [lam (x) (nilp (cdr x))])
+
+;(list/sep% '(1 2 3) '(4 5)) ~> '(1 4 5 2 4 5 3)
+(def (list/seps xs seps)
+  (def (_ ret xs) ;
+    (if (nilp xs) ret
+      (let ([a (car xs)])
+        [_ (cons a (append seps ret)) (cdr xs)]
+  ) ) )
+  (let ([rs (rev xs)])
+    [_ [list (car rs)] (cdr rs)]
+) )
 
 ; [duplicates '(123 321 123 321 321 1 2 3)] -> '(123 321 321 ...) -> remov-same
 (def (duplicates xs)

@@ -1,3 +1,4 @@
+
 ; AI
 
 (alias relu ReLU)
@@ -11,6 +12,7 @@
 (defn sigmoid (x)
   (/ (1+ [exp (- x)]))
 )
+
 (defn swish (x)
   (* x (sigmoid x))
 )

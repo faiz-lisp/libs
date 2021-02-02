@@ -1,4 +1,17 @@
 
+(alias vnilp vec-nilp)
+(alias vecons vec-cons)
+(alias veconz vec-conz)
+
+(alias vec-copy vector-copy)
+(alias mk-vec make-vector)
+(alias vec-len vector-length)
+(alias vec-set-fnum! vector-set-fixnum!)
+(alias vec-set! vector-set-fixnum!)
+(alias vecar vec-car)
+(alias vecdr vec-cdr)
+
+;---
 
 (def-syn vec-for
   (syn-ruls (in)
@@ -9,8 +22,6 @@
             body ... )
           ve )
 ) ) ) )
-
-
 
 (def (vec-range n)
   [def (_ n ret)
@@ -36,7 +47,6 @@
     (=0 (veclen x))
     Fal
 ) )
-(alias vnilp vec-nilp)
 
 (def num->lis (curry apply/reducing-num cons))
 
@@ -75,7 +85,6 @@
         ve )
       nil
 ) ) )
-(alias vecons vec-cons)
 
 (defn vec-conz (vx y)
   (if (vecp vx)
@@ -86,14 +95,6 @@
     )
     nil ;
 ) )
-(alias veconz vec-conz)
-
-(alias vec-copy vector-copy)
-(alias mk-vec make-vector)
-(alias vec-len vector-length)
-(alias vec-set-fnum! vector-set-fixnum!)
-(alias vec-set! vector-set-fixnum!)
-(alias vecar vec-car)
 
 (def (vec-head ve n) ;
   (letn ([ret (mk-vec n)])
@@ -109,7 +110,6 @@
     ret
 ) )
 (def vec-cdr (rcurry vec-tail  1))
-(alias vecdr vec-cdr)
 
 (defn vec-dmap (g xs) ;
   (def [_ xs]
@@ -163,7 +163,5 @@
       (vec-copy! ret (redu + [list-head ns i]) (xth vz i)) )
     ret
 ) )
-
-
 
 ;algo for vec-sort

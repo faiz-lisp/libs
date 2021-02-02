@@ -2,7 +2,7 @@
 == Faiz's ChezLib ==
 
 - Usage:
-  - For Windows
+  - on Windows
     - Double click `run.cmd` to run
     - Or, `chez a:/path/to/lib.sc` ...
 
