@@ -1,4 +1,4 @@
-(define (version) "Chez-lib V1.98-G")
+(define (version) "Chez-lib V1.98-H")
 (define (git-url) "https://github.com/faiz-xxxx/libs.git") ;
 
 #|
@@ -6,7 +6,7 @@
 
   - Update notes:
     - 1.98      
-      - G fix : list-repl str-repl
+      - H upd : list-repl ~> replace, str-repl;\n add : replaces
       - E upd : add list/sep, and so on
       - D add : operations for file
       - C add : (list/seps '(1 2 3) '(4 5)) ~> '(1 4 5 2 4 5 3)
@@ -28,9 +28,8 @@
       - N add : def-ffi, shell-execute
       - L fix : for: map -> for-each; upd : tail=list-tail; add : tail%
       - h Add : (doc-add '(load-lib str)) (doc load-lib)~>'(load-lib str)
-      - g upd : add-to-htab with a return expr
-      - f Upd : sym/with-nocase? ~> with?-nocase; get-htab-keys -> htab-keys;
-      - e fast: via atomp ~> consp
+      - f Upd : get-htab-keys -> htab-keys;
+      - e fast: via atomp -> consp
       - c Add : htab-:kvs,keys,values
       - b upd : docs-detail -> docs-main; Added %B flag for a function cost too much/big
       - : Add : (doc-ls co) -> documentable-keys -> '(cons cond); house keeping;
@@ -257,7 +256,7 @@ Code:
 (ali str->chs   string->list)
 (ali char->int  char->integer)
 (ali int->char  integer->char)
-(ali list-repl  list-replace)
+;(ali list-repl  list-replace)
 
 (def-syt define*
   (syt-ruls ()
@@ -1032,7 +1031,6 @@ to-test:
 (ali list-include flat-list-include)
 ;
 
-;(ali string-replace* str-repl)
 
 
 
@@ -2231,26 +2229,8 @@ to-test:
   (_ xs nths 1)
 )
 
-;(list-replace '(#\a #\~ #\d #\x) '(#\~ #\d) '(#\1 #\2 #\3) 1)
-;(list-replace '(#\a #\~ #\d #\x #\~ #\d) '(#\~ #\d) '(#\1 #\2 #\3))
-;(list-repl '(1 1 2) '(1 2) '(3)) ;-> expect '(1 3), but ~> '(1 1 3)
-; (def list-replace
-  ; (case-lam
-    ; ( [xs ori new num ==] ;
-      ; (def (_ xs xx num tmp)
-        ; (if (nilp xx)
-          ; (append new [_ xs ori (1- num) nil]) ;
-          ; (if (nilp xs) nil
-            ; (if (eq 0 num) xs
-              ; (let ([a(car xs)] [d(cdr xs)])
-                ; (if (== a (car xx))
-                  ; [_ d (cdr xx) num (cons a tmp)]
-                  ; (rev-append (cons a tmp) [_ d xx num nil]) ;
-      ; ) ) ) ) ) )
-      ; (_ xs ori num nil) )
-    ; ( [xs ori new] (list-replace xs ori new -1 eql) ) ;
-; ) )
-(def/va (list-replace ls ORI NEW [times -1] [= eql])
+;(replace '(#\a #\~ #\d #\x) '(#\~ #\d) '(#\1 #\2 #\3) 1)
+(def/va (replace ls ORI NEW [times -1] [= eql])
   (def (_ ls tmp xs n out-of-match?) ;
     (if~
       (nilp xs)   ;fully matched
@@ -2272,6 +2252,21 @@ to-test:
   (_ ls nil ORI times T)
 )
 
+;(replaces ls '(x s) '(y z))
+(def (replaces ls xs ys) ;%
+  (def (_ l ret)
+    (if~
+      [nilp l] ret
+      [consp l]
+        (cons [_ (car l) nil] [_ (cdr l) ret])
+      (let ([n (nth-of l xs)])
+        (if n
+          (nth ys n)
+          l
+  ) ) ) )
+  (_ ls nil)
+)
+
 ;replace-in-list xs 'x 'y
 
 ;elap cant print ""
@@ -2280,7 +2275,7 @@ to-test:
 
 (def/va (str-repl ss sx sy [num -1]) ;~ ;(redu str-repl% [map str->list (list ss sx sy)])
   (list->str
-    (list-repl [str->list ss] [str->list sx] [str->list sy] num eq) ;
+    (replace [str->list ss] [str->list sx] [str->list sy] num eq) ;
 ) )
 ; (def (str-repl% chs csx csy)
   ; (list->str (list-replace chs csx csy )) ;str is slow
@@ -2291,16 +2286,6 @@ to-test:
     (dec->hex dec)
     dec
 ) )
-
-; (def string-replace* ;
-  ; (case-lam
-    ; ([ss ori new num] ;(_ "asd~ddsa" "~d" "123" [-1])
-      ; (list->str
-        ; (redu (rcurry list-replace num eq) ;
-          ; [map str->list (list ss ori new)] ;
-    ; ) ) )
-    ; ([ss ori new] (string-replace* ss ori new -1))
-; ) )
 
 (def/va (str-trim ss [s-trim " "]) ;_ "asasda" "as"
   (str [trim (str->list ss) (str->list s-trim)])
@@ -3560,11 +3545,27 @@ to-test:
     (close-port of)
 ) )
 
+(def/va (make-file file [cont ""])
+  (make-file! file cont)
+  #|
+  - if file exist? then ret;  
+  - else get path
+    - if 
+  |#
+)
+
+(def/va (make-file! file [cont ""]) ;open-file-output-port / open-output-file
+  (if (eql "" cont)
+    (sys (str "cd.>" file)) ;
+    (sys (str "echo " cont ">" file)) ;
+) )
+
 (def/va (write-file! file cont [ext-back ".bak"])
   (let ([back (str file ext-back)])
-    (if (exist-file? file)      
+    (if (exist-file? file) ;
       (rename-file! file back) ;
-    ) ;(make-file file)
+    )
+    (make-file file) ;
     (write-new-file file cont)
 ) )
 
