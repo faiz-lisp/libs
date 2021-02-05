@@ -1,11 +1,14 @@
-(define (version) "Chez-lib V1.98-C")
+(define (version) "Chez-lib V1.98-G")
 (define (git-url) "https://github.com/faiz-xxxx/libs.git") ;
 
 #|
 # Chez-lib.sc (mainly for Windows) - written by Faiz
 
   - Update notes:
-    - 1.98
+    - 1.98      
+      - G fix : list-repl str-repl
+      - E upd : add list/sep, and so on
+      - D add : operations for file
       - C add : (list/seps '(1 2 3) '(4 5)) ~> '(1 4 5 2 4 5 3)
       - B add : (lam/lams ([(a) b] c . xs) [append (list a b c) xs])
       - a upd : VX.XX-X
@@ -238,6 +241,8 @@ Code:
 (alias lis->vec list->vector)
 (alias vec-len  vector-length)
 
+(ali exist-file? file-exists?)
+
 ; defaults
 
 (ali trim trim-left)
@@ -252,6 +257,7 @@ Code:
 (ali str->chs   string->list)
 (ali char->int  char->integer)
 (ali int->char  integer->char)
+(ali list-repl  list-replace)
 
 (def-syt define*
   (syt-ruls ()
@@ -685,26 +691,22 @@ to-test:
         (when (< i n)
           b1 ...
           [loop (fx1+ i)] ) ) )
-    ( [_ (i n) b1 ...]
-      (for
-        [i 0 (1- n)]
-        b1 ... ) )
-
-    ( [_ (i from to) b1 ...]
-      (for (i from to 1) b1 ...) )
-    ( [_ (i from to step) b1 ...]
-      (let loop ([i from])
+          
+    ( [_ (i n) code ...]
+      (for [i 0 (1- n)] code ... ) )
+    ( [_ (i from to) code ...]
+      (for (i from to 1) code ...) )
+    ( [_ (i from to step) code ...]
+      (let ~ ([i from])
         (cond
           ( [> step 0]
-            (when [<= i to]
-              b1 ...
-              [loop (+ i step)]
-          ) )
+            (when (<= i to)
+              code ...
+              [~ (+ i step)] ) )
           ( [< step 0]
             (when (>= i to)
-              b1 ...
-              [loop (+ i step)]
-          ) )
+              code ...
+              [~ (+ i step)] ) )
           (else nil)
     ) ) )
     
@@ -1030,7 +1032,8 @@ to-test:
 (ali list-include flat-list-include)
 ;
 
-(ali str-replace string-replace*)
+;(ali string-replace* str-repl)
+
 
 
 
@@ -1823,7 +1826,7 @@ to-test:
 )
 
 
-(def (rev-append xs ys) ;rev xs then append
+(def (append/rev-head xs ys) ;rev xs then append
   (def (_ xs ys)
     (if (nilp xs) ys
       [_ (cdr xs) (cons(car xs)ys)]
@@ -1921,6 +1924,10 @@ to-test:
 ; list
 
 (def cdr-nilp [lam (x) (nilp (cdr x))])
+
+(def (list/sep xs sep)
+  (list/seps xs (list sep))
+)
 
 ;(list/sep% '(1 2 3) '(4 5)) ~> '(1 4 5 2 4 5 3)
 (def (list/seps xs seps)
@@ -2226,22 +2233,44 @@ to-test:
 
 ;(list-replace '(#\a #\~ #\d #\x) '(#\~ #\d) '(#\1 #\2 #\3) 1)
 ;(list-replace '(#\a #\~ #\d #\x #\~ #\d) '(#\~ #\d) '(#\1 #\2 #\3))
-(def list-replace
-  (case-lam
-    ([xs ori new num ==] ;
-      (def (_ xs xx num tmp)
-        (if (nilp xx)
-          (append new [_ xs ori (1- num) nil]) ;
-          (if (nilp xs) nil
-            (if (eq 0 num) xs
-              (let ([a(car xs)] [d(cdr xs)])
-                (if (== a (car xx))
-                  [_ d (cdr xx) num (cons a tmp)]
-                  (rev-append (cons a tmp) [_ d xx num nil])
-      ) ) ) ) ) )
-      (_ xs ori num nil))
-    ([xs ori new] (list-replace xs ori new -1 eql))
-) )
+;(list-repl '(1 1 2) '(1 2) '(3)) ;-> expect '(1 3), but ~> '(1 1 3)
+; (def list-replace
+  ; (case-lam
+    ; ( [xs ori new num ==] ;
+      ; (def (_ xs xx num tmp)
+        ; (if (nilp xx)
+          ; (append new [_ xs ori (1- num) nil]) ;
+          ; (if (nilp xs) nil
+            ; (if (eq 0 num) xs
+              ; (let ([a(car xs)] [d(cdr xs)])
+                ; (if (== a (car xx))
+                  ; [_ d (cdr xx) num (cons a tmp)]
+                  ; (rev-append (cons a tmp) [_ d xx num nil]) ;
+      ; ) ) ) ) ) )
+      ; (_ xs ori num nil) )
+    ; ( [xs ori new] (list-replace xs ori new -1 eql) ) ;
+; ) )
+(def/va (list-replace ls ORI NEW [times -1] [= eql])
+  (def (_ ls tmp xs n out-of-match?) ;
+    (if~
+      (nilp xs)   ;fully matched
+        (append NEW [_ ls nil ORI (1- n) T])
+      (nilp ls)
+        (rev tmp) ;
+      (eq n 0) ls ;
+      (let ([a (car ls)] [d (cdr ls)])
+        (if (= a (car xs))
+          (if out-of-match?
+            (append/rev-head tmp
+              [_ d (list a) (cdr xs) n F] ) ;match starts
+            [_ d (cons a tmp) (cdr xs) n F] )   ;matching
+          (if out-of-match?
+            [_ d (cons a tmp) xs n out-of-match?] ;nothing matches
+            (append/rev-head tmp            ;ends the partly match
+              [_ ls nil ORI n T]
+  ) ) ) ) ) )
+  (_ ls nil ORI times T)
+)
 
 ;replace-in-list xs 'x 'y
 
@@ -2249,21 +2278,29 @@ to-test:
 
 ; string
 
+(def/va (str-repl ss sx sy [num -1]) ;~ ;(redu str-repl% [map str->list (list ss sx sy)])
+  (list->str
+    (list-repl [str->list ss] [str->list sx] [str->list sy] num eq) ;
+) )
+; (def (str-repl% chs csx csy)
+  ; (list->str (list-replace chs csx csy )) ;str is slow
+; )
+
 (def (hex dec)
   (if (num? dec)
     (dec->hex dec)
     dec
 ) )
 
-(def string-replace*
-  (case-lam
-    ([ss ori new num] ;(_ "asd~ddsa" "~d" "123" [-1])
-      (list->string
-        [redu (rcurry list-replace num eq)
-          [map string->list (li ss ori new)] ]
-    ) )
-    ([ss ori new] (string-replace* ss ori new -1))
-) )
+; (def string-replace* ;
+  ; (case-lam
+    ; ([ss ori new num] ;(_ "asd~ddsa" "~d" "123" [-1])
+      ; (list->str
+        ; (redu (rcurry list-replace num eq) ;
+          ; [map str->list (list ss ori new)] ;
+    ; ) ) )
+    ; ([ss ori new] (string-replace* ss ori new -1))
+; ) )
 
 (def/va (str-trim ss [s-trim " "]) ;_ "asasda" "as"
   (str [trim (str->list ss) (str->list s-trim)])
@@ -2493,9 +2530,9 @@ to-test:
   (_ cs x xx nil)
 )
 
-(defn string-replace (s a b) ;
-  (list->string (chars-replace-x (string->list s) a (string->list b)))
-)
+; (defn string-replace (s a b) ;
+  ; (list->string (chars-replace-x (string->list s) a (string->list b)))
+; )
 
 ;'((1 * 2 + 3 * 4) - 5) =>
 ;(_ '((1 * 2 + 3 * 4) - 5)) => '(((1 * 2) + (3 * 4)) - 5)
@@ -2722,7 +2759,7 @@ to-test:
 ; convert
 
 (def (dec->hex dec) (fmt "0x~x" dec))
-(def (hex->dec hex) (evs (str-replace hex "0" "#" 1))) ;@
+(def (hex->dec hex) (evs (str-repl hex "0" "#" 1))) ;@
 
 ; math
 
@@ -3523,6 +3560,40 @@ to-test:
     (close-port of)
 ) )
 
+(def/va (write-file! file cont [ext-back ".bak"])
+  (let ([back (str file ext-back)])
+    (if (exist-file? file)      
+      (rename-file! file back) ;
+    ) ;(make-file file)
+    (write-new-file file cont)
+) )
+
+(def (rename-file! file new)
+  (if (exist-file? new)
+    (delete-file new) )
+  (rename-file file new)
+)
+
+(def (write-new-file file cont) ;
+  (let ([p (open-output-file file)] [xs (str->list cont)]) ;
+    (def (_ xs)
+      (if [nilp xs]
+        (close-output-port p)
+        (bgn
+          (write-char (car xs) p)
+          (_ (cdr xs))
+    ) ) )
+    (_ xs)
+) )
+
+(def/va (backup-file! file [ext-back ".bak"])
+  (backup-file!% file (str file ext-back))
+)
+
+(def (backup-file!% file back)
+  (rename-file! file back) ;
+)
+
 ;码
 (setq
   mm/m  1000
@@ -3671,19 +3742,21 @@ to-test:
     ; ((chur+ [chur-fib0(chur-1 n)]) [chur-fib0((chur- n)2)])
 ; ) )
 
-(def (Yc yF%)
-  ( (lam (f)
-      [f f] )
-    (lam (g)
-      [yF%
-        (lam (x)
-          ( [g g] x
-) ) ] ) ) )
-(def y-getln (lam (~)
-    (lam (xs)
-      (if (nilp xs) 0
-        (1+ (~ (cdr xs)))
-) ) ) )
+(def (Yc ~) ;F
+  (def [FF f] ;especial-f
+    (f f) )
+  (FF
+    (lam [_] ;self
+      (~
+        (lam (arg) ;y-func / ~
+          ( [FF _]
+            arg )
+) ) ) ) )
+(def (y-getln ~)
+  (lam (xs)
+    (if (nilp xs) 0
+      (1+ [~ (cdr xs)])
+) ) )
 
 ;algo
 
@@ -4543,8 +4616,8 @@ to-test:
 
 ;
 
-(def (getcwd) (str-replace (command-result "cd") "\r\n" ""))
-(setq *current-path* (str-replace (command-result "cd") "\r\n" "")) ; ?"Pro File"
+(def (getcwd) (str-repl (command-result "cd") "\r\n" ""))
+(setq *current-path* (str-repl (command-result "cd") "\r\n" "")) ; ?"Pro File"
 
 ; (def car car%) ;
 ; (def cdr cdr%)
