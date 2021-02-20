@@ -1,4 +1,4 @@
-(define (version) "Chez-lib V1.98-K")
+(define (version) "Chez-lib v1.98-l")
 (define (git-url) "https://github.com/faiz-xxxx/libs.git") ;
 
 #|
@@ -6,18 +6,15 @@
 
   - Update notes:
     - 1.98
-      - K upd : the struct of chez-lib files
-      - J upd : read-file, write-file!, write-new-file
+      - J Upd : read-file, write-file!; write-new-file
       - I add : make-file, make-path
-      - H upd : list-repl ~> replace, str-repl;\n add : replaces
+      - H Upd : list-repl ~> replace, str-repl;\n add : replaces
       - E upd : add list/sep, and so on
       - D add : operations for file
       - C add : (list/seps '(1 2 3) '(4 5)) ~> '(1 4 5 2 4 5 3)
-      - B add : (lam/lams ([(a) b] c . xs) [append (list a b c) xs])
-      - a upd : VX.XX-X
+      - B Add : (lam/lams ([(a) b] c . xs) [append (list a b c) xs])
       - : upd : add in-range;
     - 1.97
-      - Z add : guenchi: (read-file "file.xx") ~> string
       - Y upd : (ncdr '() 1) ~> nil
       - X upd : stru> < =
       - w Add : (deep& rev char-downcase '((#\a #\s) #\D)) ~> '(#\d (#\s #\a))
@@ -205,9 +202,10 @@
     - (_ X x)
     - syt -> '
     - common/special... - :
-    
-```
+   
 Code:
+
+```
 |#
 
 (import (chezscheme)) ;for --program parameter
@@ -4706,4 +4704,5 @@ to-test:
 ) )
 
 #|
+```
  ;=== END === |#
