@@ -1,11 +1,14 @@
-(define (version) "Chez-lib V1.98-H")
+(define (version) "Chez-lib V1.98-K")
 (define (git-url) "https://github.com/faiz-xxxx/libs.git") ;
 
 #|
 # Chez-lib.sc (mainly for Windows) - written by Faiz
 
   - Update notes:
-    - 1.98      
+    - 1.98
+      - K upd : the struct of chez-lib files
+      - J upd : read-file, write-file!, write-new-file
+      - I add : make-file, make-path
       - H upd : list-repl ~> replace, str-repl;\n add : replaces
       - E upd : add list/sep, and so on
       - D add : operations for file
@@ -340,6 +343,9 @@ Code:
 ; To put aliases here
 
 (ali api-ls api-with)
+
+(ali make-file!% make-file!%/win)
+(ali make-path make-path/win)
 
 ;
 
@@ -2230,7 +2236,7 @@ to-test:
 )
 
 ;(replace '(#\a #\~ #\d #\x) '(#\~ #\d) '(#\1 #\2 #\3) 1)
-(def/va (replace ls ORI NEW [times -1] [= eql])
+(def/va (replace ls ORI NEW [times -1] [= eq]) ;
   (def (_ ls tmp xs n out-of-match?) ;
     (if~
       (nilp xs)   ;fully matched
@@ -2266,8 +2272,6 @@ to-test:
   ) ) ) )
   (_ ls nil)
 )
-
-;replace-in-list xs 'x 'y
 
 ;elap cant print ""
 
@@ -3528,15 +3532,25 @@ to-test:
 
 ; file: load-file-cont-as-str
 
-(define (read-file file-name)
-  (let ([p (open-input-file file-name)]) ;
-    (let loop ([lst nil] [c (read-char p)])
-      (if [eof-object? c]
-        (begin 
-          (close-input-port p)
-          (list->string (reverse lst)) )
-        (loop (cons c lst) (read-char p))
-) ) ) )
+; (define (read-file-0 file-name) ;guenchi
+  ; (let ([p (open-input-file file-name)]) ;
+    ; (let loop ([lst nil] [c (read-char p)])
+      ; (if [eof-object? c]
+        ; (begin 
+          ; (close-input-port p)
+          ; (list->string (reverse lst)) )
+        ; (loop (cons c lst) (read-char p))
+; ) ) ) )
+
+(def (read-file file) ;read-bin-file->bytevector/u8-list/char-list/string
+  (let*
+    ( ;[tx (make-transcoder (iconv-codec "gbk") (eol-style crlf) (error-handling-mode replace))] ;?
+      [p  (open-file-input-port file (file-options no-fail) (buffer-mode block) #f)] ;F <~ tx
+      [getter get-bytevector-all] ;<~ read-char
+      [ret (getter p)] )
+    (close-input-port p)
+    (list->str (map int->char (bytevector->u8-list ret))) ;
+) )
 
 (def (save-file cont file)
   (if (file-exists? file) (delete-file file)) ;
@@ -3545,29 +3559,69 @@ to-test:
     (close-port of)
 ) )
 
-(def/va (make-file file [cont ""])
-  (make-file! file cont)
-  #|
-  - if file exist? then ret;  
-  - else get path
-    - if 
-  |#
+(ali get-path path-parent)
+(ali exist-path? exist-file?)
+
+(def (make-file file) ;.\\asd\\1.txt ;./dsa/2.txt
+  (make-file! file)
 )
 
-(def/va (make-file! file [cont ""]) ;open-file-output-port / open-output-file
-  (if (eql "" cont)
-    (sys (str "cd.>" file)) ;
-    (sys (str "echo " cont ">" file)) ;
+(def (conv-to-win-path s-path) ;path-conv-to path [win]
+  (let ([tmp (str-repl s-path "/" "\\")])
+    tmp ;(str-replace tmp "\\" "\\\\") ;?
 ) )
 
-(def/va (write-file! file cont [ext-back ".bak"])
+(def (make-file! file) ;T F nil
+  (if (exist-file? file) nil ;
+    (let ([path (get-path file)])
+      (if (exist-path? path)
+        (make-file!% file)
+        (bgn
+          (make-path path) ;
+          (make-file!% file)
+) ) ) ) )
+
+(def (make-path/win path) ;win ;conv?
+  (sys (str "md " [conv-to-win-path path] " 2>nul")) ;hide error
+)
+
+(def (make-file!%/win file)
+  (sys (str "type nul>" file))
+)
+
+#|
+- if exist-file file:
+  - backup
+    - if exist backup-file:
+      - backup back-file ".old" ; if old there, remove the back-file ; so, just keep the old one and the last one
+|#
+(def/va (write-file! file cont [ext-back ".bak"]) ;.last
   (let ([back (str file ext-back)])
     (if (exist-file? file) ;
-      (rename-file! file back) ;
+      (rename-file! file back) ;      
+      (make-path (get-path file)) ;
     )
-    (make-file file) ;
-    (write-new-file file cont)
+    (write-new-file file cont) ; should delete file first
 ) )
+
+(def (write-new-file file cont) ;write-new-file/bin
+  (let
+    ( ;[tx (make-transcoder (iconv-codec "gbk") (eol-style lf) (error-handling-mode replace))] ;to use u8 char
+      [p  (open-file-output-port file (file-options no-fail) (buffer-mode block) F)] ) ;F for binary format file
+    (put-bytevector p ;cont
+      (u8-list->bytevector (map char->int (str->list cont))) ) ;
+    (close-port p)
+) )
+; (def (write-new-file file cont) ; if exist: dele?
+  ; (let ([p (open-output-file file)] [xs (str->list cont)]) ;
+    ; (def (_ xs)
+      ; (if [nilp xs] (close-output-port p)
+        ; (bgn
+          ; (write-char (car xs) p) ;
+          ; (_ (cdr xs))
+    ; ) ) )
+    ; (_ xs)
+; ) )
 
 (def (rename-file! file new)
   (if (exist-file? new)
@@ -3575,17 +3629,6 @@ to-test:
   (rename-file file new)
 )
 
-(def (write-new-file file cont) ;
-  (let ([p (open-output-file file)] [xs (str->list cont)]) ;
-    (def (_ xs)
-      (if [nilp xs]
-        (close-output-port p)
-        (bgn
-          (write-char (car xs) p)
-          (_ (cdr xs))
-    ) ) )
-    (_ xs)
-) )
 
 (def/va (backup-file! file [ext-back ".bak"])
   (backup-file!% file (str file ext-back))
