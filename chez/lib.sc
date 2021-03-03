@@ -1,4 +1,4 @@
-(define (version) "Chez-lib v1.98-l")
+(define (version) "Chez-lib v1.98-N")
 (define (git-url) "https://github.com/faiz-xxxx/libs.git") ;
 
 #|
@@ -6,6 +6,10 @@
 
   - Update notes:
     - 1.98
+      - N upd : range
+      - n add : (fixnum 1/1.2);\n upd : (sleep 1.0);
+      - M add : (let/ad '(1 2 3) d) ~> '(2 3)
+      - m upd : d-rev -> deep-rev
       - J Upd : read-file, write-file!; write-new-file
       - I add : make-file, make-path
       - H Upd : list-repl ~> replace, str-repl;\n add : replaces
@@ -63,7 +67,7 @@
 
   - versions:
     - idea; ideal; refined; stable;
-    - ; fast; Grace; safe; trial; refined; stable;
+    - ; fast; Grace; safe
 
   - Which ops are slow?:
     - last-pair last list?
@@ -90,8 +94,9 @@
   - todo:
     - lam/va
     - (deep-action/map/apply g xs [seq]): d-remov
-    - to compatibale with linux
+    - to compatible with linux
     - include
+    - pcre->match?
     - end->car
     - control[include convert]: strings, files, ...
     - ~(!= 1 2 1), (> 3 2 1), (coprime? 2 15 4)
@@ -114,8 +119,6 @@
       - => any->int
     - (_ xs . x) (-> -> x)
     - code:dsl->raw
-    - api-search 可以下载个网页,然后用正则搜索
-      - 用法直接searching in lib-files就可以了
     - church yc algo
     - structure:
       - skip-list/max-skip-step/for-spec-type/with-logic, path
@@ -225,11 +228,11 @@ Code:
 (alias bgn      begin)
 (alias quo      quote)
 (alias def-syt  define-syntax)
-(ali   def-syn  define-syntax)
+;(ali   def-syn  define-syntax)
 (alias syt-ruls syntax-rules)
-(ali   syn-ruls syntax-rules)
+;(ali   syn-ruls syntax-rules)
 (alias syt-case syntax-case)
-(ali   syn-case syntax-case)
+;(ali   syn-case syntax-case)
 (alias case-lam case-lambda)
 (alias els      else)
 (ali   fn       lambda)
@@ -277,7 +280,7 @@ Code:
     ( [_ (f . args) body ...]
       (defsyt f ;
         ( [_ . args]
-          (bgn body ...)
+          (bgn body ...) ;
     ) ) )
     ( [_ f (args ...) body ...]
       (defm (f args ...) body ...)
@@ -444,7 +447,15 @@ Code:
           expr
 ) ) ] ) )
 ;(def_ (asd n) [if(< n 1) nil (cons n [_ (1- n)])])
-;(alias def_ def/_)
+
+;(let/ad '(1 2 3) d) ~> '(2 3)
+(defsyt let/ad
+  ( [_ xs code ...]
+    (fluid-let-syntax ;
+      ( [a (identifier-syntax (car xs))]
+        [d (identifier-syntax (cdr xs))] )
+      code ...
+) ) )
 
 (defsyt defn_
   ( [_$% f args bd...] ;
@@ -925,7 +936,7 @@ to-test:
       ((char? x)      "char") ;
       ((str?  x)      "string") ;
       ((nil?  x)      "null")
-      ((list? x)     "list") ;
+      ((list? x)      "list") ;
       ((pair? x)      "pair")
       ;((ffi?  x)      "ffi") ;
       ((fn?   x)      "fn") ;procedure
@@ -935,12 +946,16 @@ to-test:
       (else           "other")  ;other-atoms
 ) ) )
 (alias ty type-main)
-(defm (raw . xs) ;(raw 1))
+
+;
+(defm (raw . xs) ;(str '|c:\asd\|)
   (if~
     (nilp 'xs) nil
-    (cdr-nilp 'xs) (car 'xs)
-    'xs ;'|xs|
+    (cdr-nilp 'xs)
+      (car 'xs)
+    'xs
 ) )
+
 (alias lis2num list->num)
 (ali xn->list xn-mk-list)
 (alias readexp read-expr)
@@ -1010,7 +1025,7 @@ to-test:
 (alias len0 len0?)
 (alias quot quotient)
 (alias permu permutation)
-(ali d-rev  deep-reverse)
+(ali deep-rev  deep-reverse)
 
 ;onlisp
 
@@ -1435,9 +1450,10 @@ to-test:
   ( [_ fnam rems ret api args flg]
     (def fnam (ffi flg (sym->str 'api) args ret))
 ) )
+;(defc (fnam . paras) [bgn (flg ret-type (para-types) others) (fnam [handled x] . res)])
 
+;(alias sleep c-sleep)
 
-(alias sleep c-sleep)
 (alias numofMidiOut midi-out-get-num-devs)
 (ali tail list-tail)
 
@@ -2439,14 +2455,15 @@ to-test:
 ) )
 (def (echo . xs) (apply echo% (cons " " xs))) ;
 
-(defn mk-range% (s e p) ;iota is faster
-  (let ([g (if(> p 0) > <)])
-    (def (_ ret cnt)
-      (if (g s cnt) ret
-        [_ (cons cnt ret) (- cnt p)]
+(def (mk-range% s e p) ;how about iota
+  (let ([g (if [> p 0] > <)])
+    (def (_ x)
+      (if (g x e) nil
+        (cons x [_ (+ x p)]) ;
     ) )
-    [_ nil e]
-) )
+    (if (g s e) nil          
+      [_ s]
+) ) )
 (def range
   (case-lambda
     ((a)     (mk-range% 0 (1- a) 1))
@@ -2490,10 +2507,11 @@ to-test:
 
 (defn read-expr xs ;
   (let
-    ( [p(open-input-string
+    ( (p
+        (open-input-string
           (redu~ strcat
             `("(begin " ,@xs ")") ;
-    ) ) ] ) ;ign spc between
+    ) ) ) ) ;ign spc between
     (read p)
 ) )
 ;'((^)(* / %)(+ -))
@@ -2821,7 +2839,14 @@ to-test:
     T
 ) )
 
-(defn float->fix (flo) (flonum->fixnum [round flo]))
+(def (float->fix flo) (flonum->fixnum [round flo]))
+
+(def (fixnum num)
+  (let ([rnd (round num)])  
+    (if [flonum? rnd]
+      (flonum->fixnum rnd)
+      rnd
+) ) )
 
 (def (not-exist-meet? g xs)
   (def (once ys x)
@@ -3232,7 +3257,7 @@ to-test:
   (let ([m (if [eq 0 m] 1 m)]) ;
     (def (_ ret xs)
       (if (nilp xs) ret
-        (let ([aa (head% xs m)] [dd (tail xs m)]) ;%
+        (let ([aa (head% xs m)] [dd (tail% xs m)]) ;%
           [_ (cons aa ret) dd]
     ) ) )
     (rev (_ nil xs)) ;
@@ -3277,7 +3302,7 @@ to-test:
     ) ) )
     [_ ret tmp0 xs0 xz]
   )  
-  (d-rev [~ nil (list nil) (car xz) (cdr xz)]) ;remov nil xz
+  (deep-rev [~ nil (list nil) (car xz) (cdr xz)]) ;remov nil xz
 ) ;4x+ slow
 ;
 
@@ -3530,15 +3555,15 @@ to-test:
 
 ; file: load-file-cont-as-str
 
-; (define (read-file-0 file-name) ;guenchi
-  ; (let ([p (open-input-file file-name)]) ;
-    ; (let loop ([lst nil] [c (read-char p)])
-      ; (if [eof-object? c]
-        ; (begin 
-          ; (close-input-port p)
-          ; (list->string (reverse lst)) )
-        ; (loop (cons c lst) (read-char p))
-; ) ) ) )
+(define (read-file-0 file-name) ;guenchi
+  (let ([p (open-input-file file-name)]) ;
+    (let loop ([lst nil] [c (read-char p)])
+      (if [eof-object? c]
+        (begin 
+          (close-input-port p)
+          (list->string (reverse lst)) )
+        (loop (cons c lst) (read-char p))
+) ) ) )
 
 (def (read-file file) ;read-bin-file->bytevector/u8-list/char-list/string
   (let*
@@ -4353,6 +4378,8 @@ to-test:
 
 ;---
 
+(def (sleep ms) (c-sleep [fixnum ms]))
+
 (def/va (beep [freq 456] [dura 200]) (c-beep freq dura))
 
 (def (clock*)
@@ -4615,7 +4642,7 @@ to-test:
     [ wa わ ワ][ wi い イ][ wu う ウ][ we え エ][ wo を ヲ] ;-i u e ;* wo
     [  n ん ン]                                      
     [ ga が ガ][ gi ぎ ギ][ gu ぐ グ][ ge げ ゲ][ go ご ゴ]
-    [ za ざ ザ][ zi じ ジ][ zu ず ズ][ ze ぜ ゼ][ zo ぞ ゾ] ;,ji
+    [ za ざ ザ][ zi じ ジ][ zu ず ズ][ ze ぜ ゼ][ zo ぞ ゾ] ;
     [ da だ ダ][ di ぢ ヂ][ du づ ヅ][ de で デ][ do ど ド]
     [ ba ば バ][ bi び ビ][ bu ぶ ブ][ be べ ベ][ bo ぼ ボ]
     [ pa ぱ パ][ pi ぴ ピ][ pu ぷ プ][ pe ぺ ペ][ po ぽ ポ]
@@ -4623,6 +4650,7 @@ to-test:
     [ si し シ]
     [ ti ち チ][ tu つ ツ]
     [ hu ふ フ]
+    [ ji じ ジ]
 ) )
 
 (setq aud/doremi

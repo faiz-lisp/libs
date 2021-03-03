@@ -2,9 +2,12 @@
 *.ign
 
 *.txt
-tmp
 
 *.rar
 *.zip
 
+**/tmp/
+**/bak/
 **/release/
+**/idea/
+**/oths/
