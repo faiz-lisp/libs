@@ -1,4 +1,4 @@
-(define (version) "Chez-lib v1.98-N")
+(define (version) "Chez-lib v1.98-R")
 (define (git-url) "https://github.com/faiz-xxxx/libs.git") ;
 
 #|
@@ -6,10 +6,14 @@
 
   - Update notes:
     - 1.98
+      - R add : str-trim-head, get-file-var
+      - r add : key->val xz x
+      - Q add : (divide-after '(x m k y) '(m k)) ~> '([x m k] [y]); divide; str-divide
+      - p upd : (lisp nil) ~> F
+      - O add : path operations and grep
+      - o add : range/total
       - N upd : range
       - n add : (fixnum 1/1.2);\n upd : (sleep 1.0);
-      - M add : (let/ad '(1 2 3) d) ~> '(2 3)
-      - m upd : d-rev -> deep-rev
       - J Upd : read-file, write-file!; write-new-file
       - I add : make-file, make-path
       - H Upd : list-repl ~> replace, str-repl;\n add : replaces
@@ -17,14 +21,10 @@
       - D add : operations for file
       - C add : (list/seps '(1 2 3) '(4 5)) ~> '(1 4 5 2 4 5 3)
       - B Add : (lam/lams ([(a) b] c . xs) [append (list a b c) xs])
-      - : upd : add in-range;
+      - : add : in-range;
     - 1.97
-      - Y upd : (ncdr '() 1) ~> nil
-      - X upd : stru> < =
       - w Add : (deep& rev char-downcase '((#\a #\s) #\D)) ~> '(#\d (#\s #\a))
       - v Add : (deep-exist-match? [lam (x) (cn-char? x)] '((#\我) #\3)) ~> T
-      - U add : (hex 128) ~> "0x80", and upd so
-      - u upd : add extras to tab/jp
       - S Add : (str-trim-n "asdsadsasds" '("as" "ds")) ~> "a"
       - Q Add : (trim '(1 2 1 2 1 3 1 2) '(1 2)) ~> '(1 3)
       - P upd : upd : (str/sep " " 123 456), (str/sep% "-" '(123 "456"))
@@ -32,10 +32,8 @@
       - N add : def-ffi, shell-execute
       - L fix : for: map -> for-each; upd : tail=list-tail; add : tail%
       - h Add : (doc-add '(load-lib str)) (doc load-lib)~>'(load-lib str)
-      - f Upd : get-htab-keys -> htab-keys;
-      - e fast: via atomp -> consp
+      - e fast: via changing atomp -> consp
       - c Add : htab-:kvs,keys,values
-      - b upd : docs-detail -> docs-main; Added %B flag for a function cost too much/big
       - : Add : (doc-ls co) -> documentable-keys -> '(cons cond); house keeping;
     - 1.96z upd : def/doc, doc; Added doc-paras;
     - 1.96: Add : def/doc, (doc myfunc1), docs
@@ -46,7 +44,6 @@
     - 1.92: Upd : api-with: symbol -> macro
     - 1.91: add : logic for dividing vowels in japanese; T, F;
     - 1.90: Add : data of jp, doremi
-    - 1.89: word: syn -> syt
     - 1.88: Add : divide-at
 
   - Suffixes:
@@ -89,12 +86,9 @@
     - apply let
     - eq =, eql
 
-  - tofix:
-    - (range 0 31270 529) is opposite
   - todo:
     - lam/va
     - (deep-action/map/apply g xs [seq]): d-remov
-    - to compatible with linux
     - include
     - pcre->match?
     - end->car
@@ -108,12 +102,10 @@
       - . time activities info net:salt io? file:psw/md5
     - (nthof-g-resl rand '(3 1 4) [max-n 10000000])
     - (nthof-g rand nth [len 1])
-    - d-rev
     - grep grep-rn
     - reload? load compile udp/tcp get/post v3 juce ui test trace
     - if(!#f/nil): cadr caddr cadddr eval, repl
     - cond case, for map lambda foldl reduce curry recursion repl foldr
-    - (range% sum f p n)
     - ? (str/sep sep . xs)
       - -> echo
       - => any->int
@@ -137,7 +129,7 @@
     - apply call/cc?
 
   - seq of implements:
-    - (g x y)~> apply~= reduce-> curry
+    - (g x y) -> apply -> curry
 
   - tolearn:
     - match
@@ -223,16 +215,13 @@ Code:
 
 (alias ali      alias)
 (alias imp      import)
-(alias lam      lambda)
-(alias letn     let*)
-(alias bgn      begin)
+(ali   lam      lambda)
+(ali   letn     let*)
+(ali   bgn      begin)
 (alias quo      quote)
 (alias def-syt  define-syntax)
-;(ali   def-syn  define-syntax)
 (alias syt-ruls syntax-rules)
-;(ali   syn-ruls syntax-rules)
 (alias syt-case syntax-case)
-;(ali   syn-case syntax-case)
 (alias case-lam case-lambda)
 (alias els      else)
 (ali   fn       lambda)
@@ -301,7 +290,7 @@ Code:
 (alias int?   integer?)
 (alias num?   number?)
 (alias str?   string?)
-(alias lisp   list?)
+;(alias lisp   list?) ;nil?
 (ali   consp  pair?)
 (alias pairp  pair?)
 (alias fn?    procedure?)
@@ -370,8 +359,8 @@ Code:
           )
           ...
 ) ) ) ) )
-(ali def-syn def-syt)
-(ali defsyn  defsyt)
+;(ali def-syn def-syt)
+;(ali defsyn  defsyt)
 
 (def-syt (if% stx)
   (syt-case stx (else)
@@ -404,13 +393,10 @@ Code:
 ; ) ) )
 
 (defsyt defun
-  ( [_ f (args ...) ]
-    (define (f args ...) *v) )
-  ( [_ f args ]
-    (define (f . args) *v) ) ;
-
   ( [_ f args ...]
     (define f (lam args ...)) )
+  ( [_ f args ]
+    (define (f . args) *v) ) ;
 )
 (ali defn defun)
 (alias call/k call/cc)
@@ -502,7 +488,8 @@ Code:
 (alias li list)
 
 (ali str->list string->list)
-(alias disp display*)
+;(ali str-divide string-divide)
+(alias disp display*) ;
 
 (defsyt sy/num-not-defa-vals%
   ([_ () n] n)
@@ -914,7 +901,7 @@ to-test:
       #'(bgn
         (if [nilp xs]
           (setq xs (li args ...))
-          (set-cdr! (last-pair xs) (li args ...)) ) ;
+          (set-cdr! (last-pair xs) (li args ...)) ) ;@
         (return xs)
     ) ) ;
     ( [_ args ... xs]
@@ -1049,8 +1036,6 @@ to-test:
 
 (ali list-include flat-list-include)
 ;
-
-
 
 
 
@@ -1746,20 +1731,29 @@ to-test:
 (def string-divide
   (case-lam
     ( [s sep] ;to supp, such as: sep="; "
-      (if (eql "" sep) [str->ss s]
-        (let ([chs (string->list s)] [csep (car(string->list sep))]) ;car?
+      (if (eql "" sep)
+        [str->ss s] ;
+        (let
+          ( [chs (str->list s)]
+            [csep (car (str->list sep))] ) ;car?
           (def (rev->str chs)
-            (list->string (rev chs)) )
+            (list->str [rev chs]) )
           (def (_ chs tmp ret) ;tmp is good
-            (if [nilp chs] (cons [rev->str tmp] ret)
+            (if [nilp chs]
+              (cons [rev->str tmp] ret)
               (let ([a (car chs)]) ;a?
-                (if [eq a csep] ;eq?
+                (if (eq a csep) ;eq?
                   [_ (cdr chs) nil (cons [rev->str tmp] ret)] ;
                   [_ (cdr chs) (cons a tmp) ret]
           ) ) ) )
           [rev (_ chs nil nil)]
     ) ) )
     ( [s] (string-divide s " ") )
+) )
+
+(def/va (str-divide ss [sep " "]) ;@
+  (let ([conv str->list])
+    (map list->str [divide (conv ss) (conv sep)])
 ) )
 
 (define (list->revstr chs) ;lis->revstr
@@ -1941,7 +1935,24 @@ to-test:
 
 ; list
 
+;(key->val '([a 1][b 2]) 'a)
+(def/va (key->val xz x [= eql]) ;
+  (def (_ xz)
+    (if (nilp xz) nil
+      (let ([xs (car xz)] [yz (cdr xz)])
+        (if [= x (car xs)]
+          (cadr xs)
+          [_ yz]
+  ) ) ) )
+  (_ xz)
+)
+
 (def cdr-nilp [lam (x) (nilp (cdr x))])
+
+(def [lisp x] ;@ how about list? and your old code
+  (and (pair? x)
+    [cdr-nilp [last-pair x]] ;5x ;last-pair@, dont use list?/lisp
+) )
 
 (def (list/sep xs sep)
   (list/seps xs (list sep))
@@ -2299,6 +2310,11 @@ to-test:
   ; (list->str (list-replace chs csx csy )) ;str is slow
 ; )
 
+(def/va (str-trim-head ss [mark " "])
+  (let ([conv str->list])
+    (list->str [trim-head (conv ss) (conv mark)])
+) )
+
 (def (hex dec)
   (if (num? dec)
     (dec->hex dec)
@@ -2434,12 +2450,15 @@ to-test:
 (def (call g . xs) (redu g xs)) ;
 (def (rcall% g . xs) (redu g (rev xs)))
 
-(defn member?@ (x xs)
-  (cond
-    ( [nil? xs] *f)
-    ( (or [eql x (car xs)] ;
-        (member? x (cdr xs))
-) ) ) )
+(def/va (member?% x xs [= eql])
+  (def (_ xs)
+    (if~
+      [nilp xs] F
+      [= x (car xs)] T ;
+      (_ (cdr xs))
+  ) )
+  (_ xs)
+)
 
 (def (echo% sep . xs) ;(_ xs [sep " "]) ;voidp
   (def (_ sep xs)
@@ -2464,12 +2483,37 @@ to-test:
     (if (g s e) nil          
       [_ s]
 ) ) )
+
 (def range
   (case-lambda
     ((a)     (mk-range% 0 (1- a) 1))
     ((a b)   (mk-range% a b 1))
     ((a b c) (mk-range% a b c))
 ) )
+
+;(range/total 30 4 ./ 2 0.1) ;
+(def/va (~range/total total [s 0] [f +] [p 1] [e nil]) ; more wont make slower
+  (def (_ ret res x) ;rest-->0
+    (let ([res (- res x)])
+      (if [< res 0] ret
+        [_ (cons x ret) res (f x p)]
+  ) ) )
+  (if (nilp e)
+    [_ nil total s]
+    (let ([g (if [> (f s p) s] > <)]) ;
+      (def (~ ret res x) ;x-->e
+        (let ([res (- res x)])
+          (if~
+            [< res 0] ret
+            [g x e] ret
+            [~ (cons x ret) res (f x p)] ;
+      ) ) )
+      [~ nil total s]
+) ) )
+
+(def/va (range/total total [s 0] [f +] [p 1] [e nil])
+  (rev (~range/total total s f p e))
+)
 
 (def (vec-range n)
   [def (_ n ret)
@@ -2819,12 +2863,14 @@ to-test:
 ) )
 
 (def (./ . xs)
-  (foldl / (inexact [car xs]) (cdr xs))
+  (foldl / (exa->inexa [car xs]) (cdr xs))
 )
-; (def (.* . xs)
-  ; (foldl * (inexact [car xs]) (cdr xs))
-; )
-(def .* (compose exa->inexa *))
+(def (.* . xs)
+  (foldl * (exa->inexa [car xs]) (cdr xs))
+)
+;(def .* (compose exa->inexa *))
+(def .- (compose exa->inexa -))
+(def .+ (compose exa->inexa +))
 
 (def (pow . xs)
   (if [nilp (cdr xs)]
@@ -3582,6 +3628,28 @@ to-test:
     (close-port of)
 ) )
 
+;(ls (cwd))
+(def cwd current-directory)
+(def/va (ls [s-path "./"])
+  (directory-list s-path)
+)
+
+;(with-str?-nocase "asdqQllkj" "QQ")
+(def (with-str? ss sx) ;str-with?/nocase
+  (let ([conv str->list])
+    (with? (conv ss) (conv sx))
+) )
+(def (with-str?-nocase ss sx)
+  (let ([conv str->list])
+    (with?-nocase (conv ss) (conv sx))
+) )
+
+;(grep "qq" (ls (cwd)) [ign-case? T])
+(def/va (grep sx sz [ign-case? T])
+  (let ([str-with (if ign-case? with-str?-nocase with-str?)])
+    (filter [rcurry str-with sx] sz)
+) )
+
 (ali get-path path-parent)
 (ali exist-path? exist-file?)
 
@@ -3589,10 +3657,15 @@ to-test:
   (make-file! file)
 )
 
-(def (conv-to-win-path s-path) ;path-conv-to path [win]
-  (let ([tmp (str-repl s-path "/" "\\")])
-    tmp ;(str-replace tmp "\\" "\\\\") ;?
-) )
+;(path/gnu->win "c:/asd/dsa/x.f")
+(def (path/gnu->win ss)
+  (str-repl ss "/" "\\")
+)
+
+;(path/win->gnu "c:\\asd\\dsa\\x.f")
+(def (path/win->gnu ss)
+  (str-repl ss "\\" "/")
+)
 
 (def (make-file! file) ;T F nil
   (if (exist-file? file) nil ;
@@ -3660,6 +3733,16 @@ to-test:
 (def (backup-file!% file back)
   (rename-file! file back) ;
 )
+
+;(get-file-var "product" "info.txt") ;[] (path/gnu->win "things/special/product/info.txt")
+;= \r\n , 
+(def (get-file-var s-var s-file) ;how about zhcn?
+  (let ([cont (read-file s-file)])
+    (key->val
+      (map [compose (rcurry str-divide "=") str-trim-head]
+          (str-divide cont "\r\n") )
+      s-var eql
+) ) )
 
 ;码
 (setq
@@ -4302,14 +4385,45 @@ to-test:
 
 ; list utilities
 
+;(divide-after '(x m k y) '(m k)) ;~> '([x m k] [y])
+(def (divide-after xs mark)
+  (def (_ ret tmp xs ys)
+    (if (nilp xs) ;atomp
+      (cons tmp ret)
+      (if (nilp ys)
+        [_ (cons tmp ret) nil xs mark]
+        (let ([ax (car xs)] [ay (car ys)] [dx (cdr xs)] [dy (cdr ys)])
+          (if (eq ax ay)
+            [_ ret (cons ax tmp) dx dy]
+            [_ ret (cons ax tmp) dx mark]
+  ) ) ) ) )
+  [deep-rev (_ nil nil xs mark)]
+)
+
+;(divide '(x m k m y m k z o) '(m k)) ;~> '([x] [y] [z o])
+(def (divide xs sep)
+  (def (_ ret elem tmp xs ys) ;
+    (if~
+      (nilp xs) ;atomp
+        (cons (append tmp elem) ret) ;~append
+      (nilp ys)
+        [_ (cons elem ret) nil nil xs sep]
+      (let ([ax (car xs)] [dx (cdr xs)] [ay (car ys)] [dy (cdr ys)]) ;
+        (if (eq ax ay)
+          [_ ret elem (cons ax tmp) dx dy] ;
+          [_ ret (cons ax (append tmp elem)) nil dx sep]
+  ) ) ) )
+  [deep-rev (_ nil nil nil xs sep)] ;
+)
+
 ;(divide-at (str->list "asd") 1 2) ~> '([#\a]..)
-(def (divide-at xs i)
+(def (divide-at xs i) ;[pos 'after]
   (def (_ ret xs j)
     (if (nilp xs)
-      (list ret nil) ;
+      (list ret nil) ;rev
       (if (eq j i) ;
-        (list ret xs)
-        [_ (cons(car xs)ret) (cdr xs) (1+ j)]
+        (list ret xs) ;rev
+        [_ (cons (car xs) ret) (cdr xs) (1+ j)]
   ) ) )
   (_ nil xs 0)
 )
